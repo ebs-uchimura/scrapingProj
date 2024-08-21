@@ -1,0 +1,16 @@
+{
+  "name": "concafeshopgetter",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "npm run exec",
+    "exec": "ts-node app.ts"
+  },
+  "main": "app.ts",
+  "devDependencies": {
+    "ts-node": "^10.9.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

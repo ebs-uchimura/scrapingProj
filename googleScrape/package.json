@@ -1,0 +1,33 @@
+{
+  "name": "googlescrape",
+  "productName": "googlescrape",
+  "version": "1.3.0",
+  "description": "Electron application for scraping",
+  "main": "build/google.js",
+  "scripts": {
+    "build": "tsc && chcp 65001",
+    "package-win": "tsc && chcp 65001 && electron-packager . --asar=true --overwrite --platform=win32 --arch=ia32 --prune=true --icon=./assets/google.ico --out=release-builds --electronVersion=29.3.0",
+    "start": "tsc && chcp 65001 && electron ."
+  },
+  "keywords": [],
+  "author": "ebs-uchimura <uchimura@ebisu-do.jp>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^20.12.7",
+    "@types/encoding-japanese": "^2.0.5",
+    "csv-parse": "^5.5.5",
+    "csv-stringify": "^6.4.6",
+    "dotenv": "^16.4.1",
+    "electron-log": "^5.1.2",
+    "encoding-japanese": "^2.1.0",
+    "fs": "^0.0.1-security",
+    "iconv-lite": "^0.6.3",
+    "path": "^0.12.7",
+    "puppeteer": "^22.6.4",
+    "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "electron": "^29.3.0",
+    "electron-packager": "^17.1.2"
+  }
+}
