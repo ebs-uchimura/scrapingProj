@@ -494,7 +494,7 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
     // ページ数
     let pageCounter: number = 1;
     // 総件数
-    let totalNumber: any;
+    let totalNumber: any = 0;
     // スクレイパー初期化
     await puppScraper.init();
     // 対象URL
