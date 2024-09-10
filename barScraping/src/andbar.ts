@@ -27,10 +27,9 @@ import { stringify } from "csv-stringify/sync"; // write csv
 
 // ◇ 定数
 const PAGE_COUNT: number = 10; // ページ店舗数
-const TOTAL_COUNT: number = 15402; // 総店舗数
 const CSV_ENCODING: string = "SJIS"; // CSV文字コード
 const CHOOSE_FILE: string = "読み込むCSV選択してください。"; // ファイルダイアログ
-const ANDBAR_FIXED_URL: string = "https://andbar.net/map/?prefecture=13"; // ルートURL
+const ANDBAR_FIXED_URL: string = "https://andbar.net/map/?prefecture="; // ルートURL
 
 // ◇ 設定
 // ファイル読み込み用
@@ -49,6 +48,11 @@ const dir_desktop = path.join(dir_home, "Desktop");
 // see more
 const AndBarSeemoreSelector: string =
   "#root > div:nth-child(2) > div > section > div.css-1q8fput > div.css-9hqybf > div.css-11yd8q > nav > div > p > i";
+const AndBarSeemoreNextSelector: string =
+  "#root > div:nth-child(2) > div > section > div.css-1q8fput > div.css-9hqybf > div.css-11yd8q > nav > div > p:nth-child(3)";
+// 合計数
+const AndBarTotalSelector: string =
+  "#root > div:nth-child(2) > div > section > div.css-lr6r9q > p > span";
 
 /*
  メイン
@@ -75,13 +79,15 @@ const createWindow = (): void => {
         preload: path.join(__dirname, "preload/preload.js"), // プリロード
       },
     });
+    // メニューバー非表示
+    mainWindow.setMenuBarVisibility(false);
     // index.htmlロード
     mainWindow.loadFile(path.join(__dirname, "../index.html"));
 
     // 準備完了
     mainWindow.once("ready-to-show", () => {
       // 開発モード
-      mainWindow.webContents.openDevTools();
+      // mainWindow.webContents.openDevTools();
     });
 
     // 最小化のときはトレイ常駐
@@ -121,6 +127,13 @@ const createWindow = (): void => {
 };
 // サンドボックス有効化
 app.enableSandbox();
+
+// メインプロセス(Nodejs)の多重起動防止
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  console.log("メインプロセスが多重起動しました。終了します。");
+  app.quit();
+}
 
 // 処理開始
 app.on("ready", async () => {
@@ -304,16 +317,22 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
         logger.debug(`app: scraping ${url}`);
 
         // 判定用
-        const AndBarTestSelector: string =
+        const AndBarTestSelector1: string =
           "#root > div.css-sbhcw1 > section.css-3m41uf > div.css-a5gbi7 > div.css-mlbouc > div:nth-child(7) > div > div > section:nth-child(1) > div > p:nth-child(1)";
+        // 判定用
+        const AndBarTestSelector2: string =
+          "#root > div.css-sbhcw1 > section.css-3m41uf > div.css-a5gbi7 > div.css-mlbouc > div:nth-child(5) > div > div > section:nth-child(1) > div > p:nth-child(1)";
 
         // パターン判定
-        if (await puppScraper.doCheckSelector(AndBarTestSelector)) {
+        if (await puppScraper.doCheckSelector(AndBarTestSelector1)) {
           selectorVariable = "7";
           logger.debug("variable is 7");
-        } else {
+        } else if (await puppScraper.doCheckSelector(AndBarTestSelector2)) {
           selectorVariable = "5";
           logger.debug("variable is 5");
+        } else {
+          selectorVariable = "4";
+          logger.debug("variable is 4");
         }
 
         // 店舗名
@@ -341,7 +360,7 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
         // 営業時間8
         const AndBarBusinessTime8Selector: string = `#root > div.css-sbhcw1 > section.css-3m41uf > div.css-a5gbi7 > div.css-mlbouc > div:nth-child(${selectorVariable}) > div > div > section:nth-child(1) > div > p:nth-child(8)`;
         // 所在地
-        const AndBarAddressSelector: string = `#root > div.css-sbhcw1 > section.css-3m41uf > div.css-a5gbi7 > div.css-mlbouc > div:nth-child(${selectorVariable}) > div > div > section:nth-child(2) > div > p:nth-child(1)`;
+        const AndBarAddressSelector: string = `#root > div.css-sbhcw1 > section.css-3m41uf > div > div.css-mlbouc > div:nth-child(${selectorVariable}) > div > div > section:nth-child(2) > div > p:nth-child(1)`;
         // カテゴリ
         const AndBarCategorySelector: string = `#root > div.css-sbhcw1 > section.css-3m41uf > div.css-a5gbi7 > div.css-mlbouc > div:nth-child(${selectorVariable}) > div > div > section:nth-child(3) > div`;
         // お店URL
@@ -380,8 +399,8 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
           try {
             // 結果
             let tmpResult: string = "";
-            // 1秒ウェイト
-            await setTimeout(1000);
+            // 0.5秒ウェイト
+            await setTimeout(500);
 
             // 結果収集
             const result: any = await doScrape(AndBarSelectors[key]);
@@ -463,42 +482,61 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
 });
 
 // スクレイピング
-ipcMain.on("scrapeurl", async (event: any, _: any) => {
+ipcMain.on("scrapeurl", async (event: any, arg: any) => {
   try {
     logger.info("ipc: scrape mode");
+    // もっと見るセレクタ
+    let seemoreSelector: string = "";
     // 成功数
     let successCounter: number = 0;
     // 失敗数
     let failCounter: number = 0;
     // ページ数
     let pageCounter: number = 1;
+    // 総件数
+    let totalNumber: any;
     // スクレイパー初期化
     await puppScraper.init();
+    // 対象URL
+    const targetURL: string = ANDBAR_FIXED_URL + String(arg);
     // トップへ
-    await puppScraper.doGo(ANDBAR_FIXED_URL);
-    logger.debug(`app: scraping ${ANDBAR_FIXED_URL}`);
+    await puppScraper.doGo(targetURL);
+    logger.debug(`app: scraping ${targetURL}`);
     // 1秒ウェイト
     await setTimeout(1000);
-    // 合計数を送る
-    event.sender.send("total", Number(TOTAL_COUNT));
+
+    // ページが存在する
+    if (await puppScraper.doCheckSelector(AndBarTotalSelector)) {
+      // 結果収集
+      totalNumber = await doScrape(AndBarTotalSelector);
+      // 合計数を送る
+      event.sender.send("total", Number(totalNumber));
+      console.log("1: " + totalNumber);
+    }
+
     // 連番配列
-    const numbers: number[] = [...Array(Number(TOTAL_COUNT))].map(
-      (_, i) => i + 1
-    );
+    const numbers: number[] = [...Array(totalNumber)].map((_, i) => i + 1);
+
+    console.log("2: " + numbers);
 
     // 収集ループ
-    for (let number of numbers) {
+    for (let i = 1; i < totalNumber + 1; i++) {
       try {
-        // 1秒ウェイト
-        await setTimeout(1000);
+        // 0.5秒ウェイト
+        await setTimeout(500);
 
         // ページMAX
-        if (number % PAGE_COUNT == 0) {
+        if (i % PAGE_COUNT == 0) {
+          if (i / PAGE_COUNT == 1) {
+            seemoreSelector = AndBarSeemoreSelector;
+          } else {
+            seemoreSelector = AndBarSeemoreNextSelector;
+          }
           // もっと見るクリック
-          await puppScraper.doClick(AndBarSeemoreSelector);
+          await puppScraper.doClick(seemoreSelector);
           logger.debug("app: seamore clicked");
-          // ウェイト
-          await setTimeout(3 * 1000);
+          // 0.5秒ウェイト
+          await setTimeout(500);
           // ページ数
           pageCounter++;
         }
@@ -506,7 +544,7 @@ ipcMain.on("scrapeurl", async (event: any, _: any) => {
         await puppScraper.mouseWheel();
         logger.debug(`app: scrolling...`);
         // 取得URL
-        const tmpUrl: any = await doScrapeUrl((number % PAGE_COUNT) + 1);
+        const tmpUrl: any = await doScrapeUrl((i % PAGE_COUNT) + 1);
 
         // 取得失敗
         if (tmpUrl == "") {
@@ -631,8 +669,8 @@ ipcMain.on("exit", async () => {
 const doScrape = async (selector: string): Promise<any> => {
   return new Promise(async (resolve, _) => {
     try {
-      // 1秒ウェイト
-      await setTimeout(1000);
+      // 0.2秒ウェイト
+      await setTimeout(200);
 
       // セレクタあり
       if (selector !== "") {
@@ -658,14 +696,13 @@ const doScrapeUrl = async (num: number): Promise<any> => {
     try {
       // URLセレクタ
       const AndBarDetailSelector: string = `#root > div:nth-child(2) > div > section > div.css-1q8fput > div.css-9hqybf > div.css-11yd8q > ul > li:nth-child(${num}) > span > div.css-48hjcm > a`;
-
-      // 1秒ウェイト
-      await setTimeout(1000);
+      // 0.5秒ウェイト
+      await setTimeout(500);
 
       // ページが存在する
       if (await puppScraper.doCheckSelector(AndBarDetailSelector)) {
-        // 1秒ウェイト
-        await setTimeout(1000);
+        // 0.5秒ウェイト
+        await setTimeout(500);
         // 一時url
         const tmpUrl: any = await puppScraper.doSingleEval(
           AndBarDetailSelector,

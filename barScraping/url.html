@@ -9,11 +9,12 @@
 </head>
 
 <body>
-  <h1>URL取得画面</h1>
+  <h1>&BarURL取得画面</h1>
   <div class="wrapper">
     <div class="button_area">
       <div class="operation_area">
         <h3>URL取得</h3>
+        都道府県ID&emsp;<input type="number" id="prefecture" name="prefecture" min="1" max="47"><br><br>
         <button class="button-g button-1 button-wide"
           onclick="gotoScrape();">URL取得開始</button><br><br><br>
         <button class="button-g button-wide" onclick="pauseScrape();">URL取得中断</button>
@@ -41,6 +42,8 @@
   </footer>
 
   <script>
+    // 都道府県
+    const prefectureDom = document.getElementById('prefecture');
     // 対象URL
     const targetUrlDom = document.getElementById('targeturl');
     // 進捗表示
@@ -81,7 +84,7 @@
         successtotalDom.innerHTML = '';
         failtotalDom.innerHTML = '';
         // スクレイピング
-        window.api.send("scrapeurl", "");
+        window.api.send("scrapeurl", prefectureDom.value);
 
       } catch (e) {
         // エラー処理
