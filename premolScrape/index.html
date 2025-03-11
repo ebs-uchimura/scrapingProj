@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <title>premol scraper</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+  <h1>premol scraper</h1>
+  <div class="buttonarea">
+    <div class="operation_area">
+      <h3>getURL</h3>
+      <button class="button-g button-wide" value="url" onclick="transfer('url_page');">get URL Page</button>
+    </div>
+    <div class="operation_area">
+      <h3>getShopInfo</h3>
+      <button class="button-g button-wide" value="shop" onclick="transfer('shop_page');">get ShopInfo Page</button>
+    </div>
+    <div class="operation_area">
+      <button class="button-g button-4 button-wide" value="exit" onclick="exitApp();">exit</button>
+    </div>
+  </div>
+  <footer>
+    <p><small>&copy; 2024 Satsuma Ebisudo All Rights Reserved. </small></p>
+  </footer>
+
+  <script>
+    // page transfer
+    const transfer = channel => {
+      try {
+        // page transfer
+        window.api.send("page", channel);
+
+      } catch (e) {
+        // error
+        console.log(e);
+      }
+    }
+
+    // exit App
+    const exitApp = () => {
+      try {
+        // exit App
+        window.api.send("exit");
+
+      } catch (e) {
+        // error
+        console.log(e);
+      }
+    }
+  </script>
+</body>
+
+</html>

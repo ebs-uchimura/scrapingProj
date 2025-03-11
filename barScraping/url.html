@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <title>&&Bar scraper</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+  <h1>&Bar URL scraper</h1>
+  <div class="wrapper">
+    <div class="button_area">
+      <div class="operation_area">
+        <h3>getURL</h3>
+        prefectureID&emsp;<input type="number" id="prefecture" name="prefecture" min="1" max="47"><br><br>
+        <button class="button-g button-1 button-wide"
+          onclick="gotoScrape();">get URLs</button><br><br><br>
+        <button class="button-g button-wide" onclick="pauseScrape();">pause</button>
+      </div>
+      <div class="progressarea">
+        <div>suucess:<span id="success"></span>/<span id="successtotal"></span></div>
+        <div>fail:<span id="fail"></span>/<span id="failtotal"></span></div>
+      </div>
+      <div class="operation_area">
+        <h3>status</h3>
+        <div id="scrapingstatus"></div>
+      </div>
+      <div class="operation_area">
+        <button type="button" id="topbutton" class="button-g button-6 button-wide" role="button"
+          onclick="transfer('top_page');">go to top</button>
+      </div>
+      <div class="operation_area">
+        <button class="button-g button-1 button-wide" value="exit" onclick="exitApp();">exit</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p><small>&copy; 2024 Satsuma Ebisudo All Rights Reserved. </small></p>
+  </footer>
+
+  <script>
+    // prefectureDom
+    const prefectureDom = document.getElementById('prefecture');
+    // targetUrlDom
+    const targetUrlDom = document.getElementById('targeturl');
+    // successDom
+    const successDom = document.getElementById('success');
+    // failDom
+    const failDom = document.getElementById('fail');
+    // successtotalDom
+    const successtotalDom = document.getElementById('successtotal');
+    // failtotalDom
+    const failtotalDom = document.getElementById('failtotal');
+
+    // update total
+    window.api.on('total', arg => {
+      // total success
+      successtotalDom.innerHTML = arg;
+      // fail success
+      failtotalDom.innerHTML = arg;
+    });
+
+    // update success
+    window.api.on('success', arg => {
+      // success
+      successDom.innerHTML = arg;
+    });
+
+    // show fail
+    window.api.on('fail', arg => {
+      // fail
+      failDom.innerHTML = arg;
+    });
+
+    // start scraping
+    const gotoScrape = () => {
+      try {
+        // initialize counter
+        successDom.innerHTML = '';
+        failDom.innerHTML = '';
+        successtotalDom.innerHTML = '';
+        failtotalDom.innerHTML = '';
+        // scrape
+        window.api.send("scrapeurl", prefectureDom.value);
+
+      } catch (e) {
+        // error
+        console.log(e);
+      }
+    }
+
+    // stop scraping
+    const pauseScrape = () => {
+      try {
+        // stop scraping
+        window.api.send("pause", 'url');
+
+      } catch (e) {
+        // error
+        console.log(e);
+      }
+    }
+
+    // exit app
+    const exitApp = () => {
+      try {
+         // exit app
+        window.api.send("exit");
+
+      } catch (e) {
+        // error
+        console.log(e);
+      }
+    }
+
+    // page transfer
+    const transfer = channel => {
+      try {
+        // page transfer
+        window.api.send("page", channel);
+
+      } catch (e) {
+        // error
+        console.log(e);
+      }
+    }
+  </script>
+</body>
+
+</html>

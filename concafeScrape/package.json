@@ -1,0 +1,22 @@
+{
+  "name": "concafescrape",
+  "productName": "concafescrape",
+  "version": "0.2.0",
+  "description": "application for scraping",
+  "main": "concafe.ts",
+  "scripts": {
+    "start": "npm run exec",
+    "exec": "ts-node concafe.ts"
+  },
+  "keywords": [],
+  "author": "ebs-uchimura <uchimura@ebisu-do.jp>",
+  "license": "MIT",
+  "dependencies": {
+    "csv": "^6.3.11",
+    "iconv-lite": "^0.6.3",
+    "puppeteer": "^24.1.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
+  }
+}

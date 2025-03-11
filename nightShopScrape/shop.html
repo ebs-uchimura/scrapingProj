@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <title>night scraper</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+  <h1>night shopinfo scraper</h1>
+  <div class="wrapper">
+    <div class="button_area">
+      <div class="operation_area">
+        <h3>read CSV</h3>
+        <button class="button-g button-1 button-wide button-white-txt" value="regist"
+          onclick="readCSV();">read CSV</button>
+        <div id="csvfilepath"></div>
+      </div>
+      <div class="operation_area">
+        <h3>scraping</h3>
+        <button class="button-g button-1 button-wide button-white-txt"
+          onclick="gotoScrape();">start scraping</button><br><br>
+        <button class="button-g button-wide" onclick="pauseScrape();">pause scraping</button>
+      </div>
+      <div class="progressarea">
+        <div>success:<span id="success"></span>/<span id="successtotal"></span></div>
+        <div>fail:<span id="fail"></span>/<span id="failtotal"></span></div>
+      </div>
+      <div class="operation_area">
+        <button class="button-g button-wide" value="reader" onclick="clearCSV()">clear</button><br><br>
+        <button type="button" id="topbutton" class="button-6 button-g button-wide" role="button"
+          onclick="transfer('top_page');">goto top</button>
+      </div>
+      <div class="operation_area">
+        <button class="button-g button-1 button-wide button-white-txt" value="exit" onclick="exitApp();">exit</button>
+      </div>
+    </div>
+
+    <footer>
+      <p><small>&copy; 2024 Satsuma Ebisudo All Rights Reserved. </small></p>
+    </footer>
+
+    <script>
+      /// dom
+      // CSV file
+      const csvfileDom = document.getElementById('csvfilepath');
+      // success
+      const successDom = document.getElementById('success');
+      // fail
+      const failDom = document.getElementById('fail');
+      // success total
+      const successtotalDom = document.getElementById('successtotal');
+      // fail total
+      const failtotalDom = document.getElementById('failtotal');
+
+      // total
+      window.api.on('total', arg => {
+        // success total
+        successtotalDom.innerHTML = arg;
+        // fail total
+        failtotalDom.innerHTML = arg;
+      });
+
+      // update success counter
+      window.api.on('success', arg => {
+        // success counter
+        successDom.innerHTML = arg;
+      });
+
+      // update fail counter
+      window.api.on('fail', arg => {
+        // fail counter
+        failDom.innerHTML = arg;
+      });
+
+      // shop info
+      window.api.on("shopinfoCsvlist", arg => {
+        try {
+          // shop data
+          const shopinfoArray = arg.record.flat();
+          // convert to JSON
+          const serializedArray = JSON.stringify(shopinfoArray);
+          // save to localStorage
+          localStorage.setItem('shopinfoArray', serializedArray);
+          // show file path
+          csvfileDom.innerHTML = arg.filename;
+
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      });
+
+      // read CSV
+      const readCSV = () => {
+        try {
+          // read CSV
+          window.api.send("csv", '');
+
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      }
+
+      // CSV clear
+      const clearCSV = () => {
+        try {
+          // clear localStorage
+          localStorage.clear();
+          // clear innerhtml
+          csvfileDom.innerHTML = "";
+
+        } catch (e) {
+          // error
+          window.api.send("error", e);
+        }
+      }
+
+      // start scraping
+      const gotoScrape = () => {
+        try {
+          // init form
+          successDom.innerHTML = '';
+          failDom.innerHTML = '';
+          successtotalDom.innerHTML = '';
+          failtotalDom.innerHTML = '';
+          // shopurl list
+          const serializedArray = JSON.parse(localStorage.getItem('shopinfoArray'));
+          // start scraping
+          window.api.send("scrape", serializedArray);
+
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      }
+
+      // pause scraping
+      const pauseScrape = () => {
+        try {
+          // pause scraping
+          window.api.send("pause", 'shop');
+
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      }
+
+      // exit App
+      const exitApp = () => {
+        try {
+          // exit App
+          window.api.send("exit");
+
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      }
+
+      // page transfer
+      const transfer = channel => {
+        try {
+          // page transfer
+          window.api.send("page", channel);
+
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      }
+    </script>
+</body>
+
+</html>
