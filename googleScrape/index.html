@@ -55,6 +55,8 @@
     const successtotalDom = document.getElementById('successtotal');
     // fail total
     const failtotalDom = document.getElementById('failtotal');
+    // clear storage
+    localStorage.clear();
 
     // total
     window.api.on('total', arg => {
@@ -79,6 +81,9 @@
     // shopinfo
     window.api.on("shopinfoCsvlist", arg => {
       try {
+        // clear storage
+        localStorage.clear();
+        console.log(arg);
         // user list
         const shopinfoArray = arg.record.flat();
         // convert to JSON
@@ -97,7 +102,6 @@
     // update status
     window.api.on("statusUpdate", arg => {
       try {
-        console.log(arg);
         // not error
         if (arg != 'error') {
           // mode exists
@@ -171,6 +175,7 @@
         failtotalDom.innerHTML = '';
         // userlist
         const serializedArray = JSON.parse(localStorage.getItem('shopinfoArray'));
+        console.log(serializedArray);
         // scraping
         window.api.send("scrape", serializedArray);
 
