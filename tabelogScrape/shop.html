@@ -3,38 +3,38 @@
 
 <head>
   <meta charset="utf-8" />
-  <title>tabelog scraper</title>
+  <title>食べログスクレイピングツール</title>
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
   <link rel="stylesheet" href="css/index.css">
 </head>
 
 <body>
-  <h1>tabelog shopinfo scraper</h1>
+  <h1>食べログスクレイピングツール</h1>
   <div class="wrapper">
     <div class="button_area">
       <div class="operation_area">
-        <h3>read CSV</h3>
-        <div><button class="button-g button-wide" value="regist" onclick="readCSV();">read CSV</button></div>
+        <h3>CSV読込</h3>
+        <div><button class="button-g button-wide" value="regist" onclick="readCSV();">CSV読込</button></div>
         <div id="csvfilepath"></div>
       </div>
       <div class="operation_area">
-        <h3>scraping</h3>
-        <div><button class="button-g button-wide button-2" value="edit" onclick="gotoScrape();">start scraping</button></div>
-        <div><button class="button-g button-wide" onclick="pauseScrape();">pause scraping</button></div>
+        <h3>スクレイピング</h3>
+        <div><button class="button-g button-wide button-2" value="edit" onclick="gotoScrape();">開始</button></div>
+        <div><button class="button-g button-wide" onclick="pauseScrape();">中断</button></div>
       </div>
       <div class="progressarea">
-        <div>success:<span id="success"></span>/<span id="successtotal"></span></div>
-        <div>fail:<span id="fail"></span>/<span id="failtotal"></span></div>
+        <div>成功:<span id="success"></span>/<span id="successtotal"></span></div>
+        <div>失敗:<span id="fail"></span>/<span id="failtotal"></span></div>
       </div>
       <div class="operation_area">
-        <h3>status</h3>
+        <h3>ステータス</h3>
         <div id="scrapingstatus"></div>
       </div>
       <div class="operation_area">
-        <div><button class="button-g button-4 button-wide " value="reader" onclick="clearCSV()">clear</button></div>
+        <div><button class="button-g button-4 button-wide " value="reader" onclick="clearCSV()">クリア</button></div>
         <div><button type="button" id="topbutton" class="button-6 button-g button-wide" role="button"
-            onclick="transfer('top_page');">goto top</button></div>
-        <div><button class="button-g button-4 button-wide" value="exit" onclick="exitApp();">exit</button></div>
+            onclick="transfer('top_page');">トップへ戻る</button></div>
+        <div><button class="button-g button-4 button-wide" value="exit" onclick="exitApp();">終了</button></div>
       </div>
     </div>
   </div>
@@ -81,10 +81,8 @@
     // shop info
     window.api.on("shopinfoCsvlist", arg => {
       try {
-        // user list
-        const shopinfoArray = arg.record.flat();
         // convert to JSON
-        const serializedArray = JSON.stringify(shopinfoArray);
+        const serializedArray = JSON.stringify(arg);
         // save localStorage
         localStorage.setItem('shopinfoArray', serializedArray);
         // file path

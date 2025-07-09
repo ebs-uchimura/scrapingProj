@@ -3,7 +3,7 @@
     "target": "es2016",
     /* Modules */
     "module": "commonjs",
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "outDir": "./build",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -12,9 +12,14 @@
     /* Completeness */
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    "paths": {
+      "*": [
+        "../@types/*"
+      ]
+    }
   },
   "include": [
-    "."
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
