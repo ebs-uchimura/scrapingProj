@@ -20,7 +20,6 @@
       <div class="operation_area">
         <h3>スクレイピング</h3>
         <div><button class="button-g button-wide button-2" value="edit" onclick="gotoScrape();">開始</button></div>
-        <div><button class="button-g button-wide" onclick="pauseScrape();">中断</button></div>
       </div>
       <div class="progressarea">
         <div>成功:<span id="success"></span>/<span id="successtotal"></span></div>
@@ -31,7 +30,6 @@
         <div id="scrapingstatus"></div>
       </div>
       <div class="operation_area">
-        <div><button class="button-g button-4 button-wide " value="reader" onclick="clearCSV()">クリア</button></div>
         <div><button type="button" id="topbutton" class="button-6 button-g button-wide" role="button"
             onclick="transfer('top_page');">トップへ戻る</button></div>
         <div><button class="button-g button-4 button-wide" value="exit" onclick="exitApp();">終了</button></div>
@@ -119,20 +117,6 @@
       }
     }
 
-    // clear CSV
-    const clearCSV = () => {
-      try {
-        // clear localStorage
-        localStorage.clear();
-        // clear html
-        csvfileDom.innerHTML = "";
-
-      } catch (e) {
-        // error
-        window.api.send("error", e);
-      }
-    }
-
     // start scraping
     const gotoScrape = () => {
       try {
@@ -145,18 +129,6 @@
         const serializedArray = JSON.parse(localStorage.getItem('shopinfoArray'));
         // start scraping
         window.api.send("scrape", serializedArray);
-
-      } catch (e) {
-        // error
-        console.log(e);
-      }
-    }
-
-    // pause Scraping
-    const pauseScrape = () => {
-      try {
-        // pause Scraping
-        window.api.send("pause", "shop");
 
       } catch (e) {
         // error

@@ -43,8 +43,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-//* Constants
-const globalvariables_1 = require("../consts/globalvariables");
 // define modules
 const path = __importStar(require("path")); // path
 const electron_1 = require("electron"); // electron
@@ -52,7 +50,7 @@ const electron_log_1 = __importDefault(require("electron-log")); // Logger
 // Logger class
 class ELLogger {
     // construnctor
-    constructor(logname, level) {
+    constructor(company, logname, level) {
         // debug
         this.debug = (message) => {
             electron_log_1.default.debug(message);
@@ -69,7 +67,7 @@ class ELLogger {
             }
         };
         // log dir path
-        const dirpath = path.join(electron_1.app.getPath('home'), globalvariables_1.myConst.COMPANY_NAME, globalvariables_1.myConst.APP_NAME);
+        const dirpath = path.join(electron_1.app.getPath('home'), company, logname);
         // Logger config
         const prefix = getNowDate(0);
         // filename tmp

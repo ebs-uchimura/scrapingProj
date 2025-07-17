@@ -9,8 +9,9 @@ exports.myArrays = exports.mySelector = exports.myCategories = exports.myPropert
 /** const */
 var myConst;
 (function (myConst) {
-    myConst.COMPANY_NAME = "ebisudo";
+    myConst.DEV_FLG = false;
     myConst.APP_NAME = "tabelogScraper";
+    myConst.COMPANY_NAME = 'Ebisudo';
     myConst.CSV_ENCODING = "SJIS";
     myConst.TABELOG_BASE = "https://tabelog.com/";
     myConst.LOG_LEVEL = 'all';
@@ -40,60 +41,26 @@ var mySelector;
     mySelector.tabeLogTotalSelector = "#container > div.rstlist-contents.clearfix > div.flexible-rstlst > div.flexible-rstlst-main > div.list-controll.clearfix > div > span:nth-child(4)";
     // Tabelog hit selector
     mySelector.tabeLogGenreTotalSelector = "#container > div.rstlist-contents.clearfix > div.flexible-rstlst > div > div.list-controll.clearfix > div:nth-child(2) > div > span:nth-child(4) > strong";
-    // Tabelog genre selector
-    mySelector.tabelLogGenreSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(2) > td > span";
     // Tabelog mainshopname selector
     mySelector.tabeLogMainShopnameSelector = "#rstdtl-head > div.rstdtl-header > section > div.rdheader-title-data > div.rdheader-rstname-wrap > div > h2 > span";
-    // Tabelog mainshopname ruby selector
-    mySelector.tabeLogMainShopnameRubySelector = "#rstdtl-head > div.rstdtl-header > section > div.rdheader-title-data > div.rdheader-rstname-wrap > div > span";
     // Tabelog station selector
     mySelector.tabeLogStationSelector = "#rstdtl-head > div.rstdtl-header > section > div.rdheader-info-data > div > div > div:nth-child(1) > dl.rdheader-subinfo__item.rdheader-subinfo__item--station > dd > div > div.linktree__parent > a > span";
     // Tabelog subshopname selector
-    mySelector.tabeLogMainSubshopname = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(1) > td > div > span";
+    mySelector.tabeLogMainSubshopname = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(1) > td";
+    // Tabelog genre selector
+    mySelector.tabelLogGenreSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(2) > td > span";
     // Tabelog reserve telephone selector
     mySelector.tabeLogReservephoneSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(3) > td > p > strong";
-    // Tabelog reservable selector
-    mySelector.tabeLogReservableSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(4) > td > p";
     // Tabelog address1 selector
     mySelector.tabeLogAddress1Selector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(5) > td > p > span:nth-child(1)";
     // Tabelog address2 selector
     mySelector.tabeLogAddress2Selector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(5) > td > p > span:nth-child(2)";
-    // Tabelog businesstime monday selector
-    mySelector.tabeLogBusinesstimeMonSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(1) > ul > li";
-    // Tabelog businesstime tuesday selector
-    mySelector.tabeLogBusinesstimeTueSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(2) > ul > li";
-    // Tabelog businesstime wednesday selector
-    mySelector.tabeLogBusinesstimeWedSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(3) > ul > li";
-    // Tabelog businesstime thursday selector
-    mySelector.tabeLogBusinesstimeThuSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(4) > ul > li";
-    // Tabelog businesstime friday selector
-    mySelector.tabeLogBusinesstimeFriSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(5) > ul > li";
-    // Tabelog businesstime saturday selector
-    mySelector.tabeLogBusinesstimeSatSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(6) > ul > li";
-    // Tabelog businesstime sunday selector
-    mySelector.tabeLogBusinesstimeSunSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(7) > ul > li";
-    // Tabelog businesstime holiday selector
-    mySelector.tabeLogBusinesstimeHolSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > div > ul > li";
-    // Tabelog payment card selector
-    mySelector.tabeLogPaymentCardSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(10) > td > div:nth-child(1) > p";
-    // Tabelog payment electronic mony selector
-    mySelector.tabeLogPaymentElSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(10) > td > div:nth-child(2) > p";
-    // Tabelog payment code selector
-    mySelector.tabeLogPaymentCodeSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(10) > td > div:nth-child(3) > p";
+    // Tabelog address3 selector
+    mySelector.tabeLogAddress3Selector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(5) > td > p > span:nth-child(3)";
+    // Tabelog businesstime selector
+    mySelector.tabeLogBusinesstimeSelector = "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td";
     // Tabelog sheet selector
     mySelector.tabeLogSheetSelector = "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(1) > td > p";
-    // Tabelog reserve limit selector
-    mySelector.tabeLogReserveLimitSelector = "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(2) > td > p";
-    // Tabelog privateroom selector
-    mySelector.tabeLogPrivateRoomSelector = "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(3) > td > p";
-    // Tabelog rental selector
-    mySelector.tabeLogRentalSelector = "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(4) > td > p:nth-child(1)";
-    // Tabelog smoking selector
-    mySelector.tabeLogSmokingSelector = "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(5) > td";
-    // Tabelog parking selector
-    mySelector.tabeLogParkingSelector = "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(6) > td";
-    // Tabelog alldrink selector
-    mySelector.tabeLogAlldrinkSelector = "#rst-data-head > table:nth-child(6) > tbody > tr:nth-child(1) > td > p";
     // Tabelog homepage selector
     mySelector.tabeLogHomepageSelector = "#rst-data-head > table:nth-child(9) > tbody > tr:nth-child(5) > td > p > a > span";
     // Tabelog telephone selector
@@ -106,58 +73,17 @@ var myArrays;
 (function (myArrays) {
     myArrays.columns = [
         "shopname", // shopname
-        "shopnameruby", // shopname ruby
         "station", // station
         "shopname2", // shopname2
         "genre", // genre
         "telephone", // telephone
-        "reservable", // reservable
         "address1", // address1
         "address2", // address2
-        "monday", // monday
-        "tuesday", // tuesday
-        "wednesday", // wednesday
-        "thursday", // thursday
-        "friday", // friday
-        "saturday", // saturday
-        "sunday", // sunday
-        "holiday", // holiday
-        "creditcard", // creditcard
-        "electronicmoney", // electronic money
-        "codepayment", // code payment
-        "seat", // seat
-        "capacity", // capacity
-        "privateroom", // privateroom
-        "vip", // vip
-        "smoking", // smoking
-        "parking", // parking
-        "alldrink", // alldrink
+        "address3", // address3
+        "businesstime", // businesstime
         "homepage", // homepage
         "shopphone", // shopphone
         "shopphone2", // shopphone2
-    ];
-    // columns
-    myArrays.urls = [
-        "url1", // url1
-        "url2", // url2
-        "url3", // url3
-        "url4", // url4
-        "url5", // url5
-        "url6", // url6
-        "url7", // url7
-        "url8", // url8
-        "url9", // url9
-        "url10", // url10
-        "url11", // url11
-        "url12", // url12
-        "url13", // url13
-        "url14", // url14
-        "url15", // url15
-        "url16", // url16
-        "url17", // url17
-        "url18", // url18
-        "url19", // url19
-        "url20", // url20
     ];
     // categories
     myArrays.categories = [

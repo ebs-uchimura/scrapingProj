@@ -65,27 +65,29 @@
           <option value="okinawa">沖縄県</option>
         </select>
       </div>
+      <div class="input_area">
+        開始エリア番号:
+        <input type="number" id="startarea" name="startarea" min="1" max="31" />
+      </div>
+      <div class="input_area">
+        開始都市番号:
+        <input type="number" id="startcity" name="startcity" min="1" max="31" />
+      </div>
       <div class="button_area">
         <button class="button-g button-2 button-wide" onclick="gotoScrape();">開始</button>
-      </div>
-      <div class="button_area">
-        <button class="button-g button-wide" onclick="pauseScrape();">中断</button>
-      </div>
-      <div class="button_area">
-        <button class="button-g button-wide" onclick="clearScrape();">履歴クリア</button>
       </div>
     </div>
     <div class="progress_area">
       <div>
         都道府県合計数:
-        <span id="preftotal"></span>
+        <span id="pref"></span>/<span id="preftotal"></span>
       </div>
       <div>
-        大エリア成功:
+        市区町村成功数:
         <span id="area"></span>/<span id="areatotal"></span>
       </div>
       <div>
-        小エリア成功:
+        エリア成功数:
         <span id="city"></span>/<span id="citytotal"></span>
       </div>
     </div>
@@ -117,10 +119,22 @@
     const areatotalDom = document.getElementById('areatotal');
     // citytotal
     const citytotalDom = document.getElementById('citytotal');
+    // pref
+    const prefDom = document.getElementById('pref');
     // area
     const areaDom = document.getElementById('area');
     // city
     const cityDom = document.getElementById('city');
+    // startarea
+    const startAreaDom = document.getElementById('startarea');
+     // startcity
+    const startCityDom = document.getElementById('startcity');
+
+    // pref total
+    window.api.on('console', arg => {
+      // pref total dom
+      console.log(arg);
+    });
 
     // pref total
     window.api.on('preftotal', arg => {
@@ -133,11 +147,17 @@
       // area total dom
       areatotalDom.innerHTML = arg;
     });
-    
+
     // city total
     window.api.on('citytotal', arg => {
       // city total dom
       citytotalDom.innerHTML = arg;
+    });
+
+    // pref success
+    window.api.on('prefsuccess', arg => {
+      // area success dom
+      prefDom.innerHTML = arg;
     });
 
     // area success
@@ -187,10 +207,16 @@
         scrapingstatusDom.innerHTML = '';
         // select dom
         const select = document.getElementById('prefecture');
+        // startarea no
+        const startareaNo = startAreaDom.value;
+        // startcity no
+        const startcityNo = startCityDom.value;
         // send obj
         const obj = {
           pref: select.value,
           index: select.selectedIndex,
+          area: startareaNo,
+          city: startcityNo,
         }
         // error
         if (select.selectedIndex == 0) {
@@ -199,35 +225,6 @@
         }
         // start scraping
         window.api.send("scrapeurl", obj);
-
-      } catch (e) {
-        // error
-        console.log(e);
-      }
-    }
-
-    // pause Scraping
-    const pauseScrape = () => {
-      try {
-        // select dom
-        const select = document.getElementById('prefecture');
-        // pause Scraping
-        window.api.send("pause", {
-          type: "url",
-          index: select.selectedIndex,
-        });
-
-      } catch (e) {
-        // error
-        console.log(e);
-      }
-    }
-
-    // clear Scraping
-    const clearScrape = () => {
-      try {
-        // pause Scraping
-        window.api.send("clear");
 
       } catch (e) {
         // error

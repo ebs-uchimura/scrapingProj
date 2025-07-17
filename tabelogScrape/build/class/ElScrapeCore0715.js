@@ -60,16 +60,6 @@ const USER_ROOT_PATH = (_a = process.env[process.platform == "win32" ? "USERPROF
 const CHROME_EXEC_PATH1 = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'; // chrome.exe path1
 const CHROME_EXEC_PATH2 = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'; // chrome.exe path2
 const CHROME_EXEC_PATH3 = '\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'; // chrome.exe path3
-const DISABLE_EXTENSIONS = "--disable-extensions"; // disable extension
-const ALLOW_INSECURE = "--allow-running-insecure-content"; // allow insecure content
-const IGNORE_CERT_ERROR = "--ignore-certificate-errors"; // ignore cert-errors
-const NO_SANDBOX = "--no-sandbox"; // no sandbox
-const DISABLE_SANDBOX = "--disable-setuid-sandbox"; // no setup sandbox
-const DISABLE_DEV_SHM = "--disable-dev-shm-usage"; // no dev shm
-const DISABLE_GPU = "--disable-gpu"; // no gpu
-const NO_FIRST_RUN = "--no-first-run"; // no first run
-const NO_ZYGOTE = "--no-zygote"; // no zygote
-const MAX_SCREENSIZE = "--start-maximized"; // max screen
 const DEF_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"; // useragent
 // define modules
 const fs = __importStar(require("node:fs")); // fs
@@ -94,7 +84,7 @@ class Scrape {
             try {
                 _b.logger.debug('scrape: initialize mode.');
                 const puppOptions = {
-                    headless: false, // no display mode
+                    headless: true, // no display mode
                     executablePath: getChromePath(), // chrome.exe path
                     ignoreDefaultArgs: [], // ignore extensions
                     args: [], // args
@@ -189,7 +179,6 @@ class Scrape {
             try {
                 _b.logger.debug('scrape: doGo mode.');
                 // goto target page
-                _b.logger.debug(targetPage);
                 yield _b.page.goto(targetPage);
                 // get page height
                 const height = yield _b.page.evaluate(() => {
@@ -335,7 +324,7 @@ class Scrape {
                 const exists = yield _b.page.$eval(selector, () => true).catch(() => false);
                 // no result
                 if (!exists) {
-                    _b.logger.debug('not exists');
+                    //Scrape.logger.debug('not exists');
                     resolve('');
                 }
                 else {

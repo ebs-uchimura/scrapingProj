@@ -56,59 +56,21 @@ const globalvariables_1 = require("./consts/globalvariables");
 // import modules
 const electron_1 = require("electron"); // electron
 const path = __importStar(require("node:path")); // path
-const node_sqlite_1 = require("node:sqlite");
-const ElScrape0616_1 = require("./class/ElScrape0616"); // scraper
+const ElScrapeCore0715_1 = require("./class/ElScrapeCore0715"); // scraper
 const ElDialog0414_1 = __importDefault(require("./class/ElDialog0414")); // dilog
 const ElLogger_1 = __importDefault(require("./class/ElLogger")); // logger
 const ElCsv0414_1 = __importDefault(require("./class/ElCsv0414")); // csv
-const node_cache_1 = __importDefault(require("node-cache")); // node-cache
+const ElMkdir0414_1 = __importDefault(require("./class/ElMkdir0414")); // mkdir
 // loggeer instance
-const logger = new ElLogger_1.default(globalvariables_1.myConst.APP_NAME, globalvariables_1.myConst.LOG_LEVEL);
+const logger = new ElLogger_1.default(globalvariables_1.myConst.COMPANY_NAME, globalvariables_1.myConst.APP_NAME, globalvariables_1.myConst.LOG_LEVEL);
 // csv
 const csvMaker = new ElCsv0414_1.default(globalvariables_1.myConst.CSV_ENCODING, logger);
 // dialog
 const dialogMaker = new ElDialog0414_1.default(logger);
 // scraper
-const puppScraper = new ElScrape0616_1.Scrape(logger);
-// cache
-const cacheMaker = new node_cache_1.default();
-// db path
-const dbPath = path.join(__dirname, '..', 'database.db');
-// sqlite
-const database = new node_sqlite_1.DatabaseSync(dbPath);
-// all selectors
-const tabeLogSelectors = {
-    shopname: globalvariables_1.mySelector.tabeLogMainShopnameSelector,
-    shopnameruby: globalvariables_1.mySelector.tabeLogMainShopnameRubySelector,
-    station: globalvariables_1.mySelector.tabeLogStationSelector,
-    shopname2: globalvariables_1.mySelector.tabeLogMainSubshopname,
-    genre: globalvariables_1.mySelector.tabelLogGenreSelector,
-    telephone: globalvariables_1.mySelector.tabeLogReservephoneSelector,
-    reservable: globalvariables_1.mySelector.tabeLogReservableSelector,
-    address1: globalvariables_1.mySelector.tabeLogAddress1Selector,
-    address2: globalvariables_1.mySelector.tabeLogAddress2Selector,
-    monday: globalvariables_1.mySelector.tabeLogBusinesstimeMonSelector,
-    tuesday: globalvariables_1.mySelector.tabeLogBusinesstimeTueSelector,
-    wednesday: globalvariables_1.mySelector.tabeLogBusinesstimeWedSelector,
-    thursday: globalvariables_1.mySelector.tabeLogBusinesstimeThuSelector,
-    friday: globalvariables_1.mySelector.tabeLogBusinesstimeFriSelector,
-    saturday: globalvariables_1.mySelector.tabeLogBusinesstimeSatSelector,
-    sunday: globalvariables_1.mySelector.tabeLogBusinesstimeSunSelector,
-    holiday: globalvariables_1.mySelector.tabeLogBusinesstimeHolSelector,
-    creditcard: globalvariables_1.mySelector.tabeLogPaymentCardSelector,
-    electronicmoney: globalvariables_1.mySelector.tabeLogPaymentElSelector,
-    codepayment: globalvariables_1.mySelector.tabeLogPaymentCodeSelector,
-    seat: globalvariables_1.mySelector.tabeLogSheetSelector,
-    capacity: globalvariables_1.mySelector.tabeLogReserveLimitSelector,
-    privateroom: globalvariables_1.mySelector.tabeLogPrivateRoomSelector,
-    vip: globalvariables_1.mySelector.tabeLogRentalSelector,
-    smoking: globalvariables_1.mySelector.tabeLogSmokingSelector,
-    parking: globalvariables_1.mySelector.tabeLogParkingSelector,
-    alldrink: globalvariables_1.mySelector.tabeLogAlldrinkSelector,
-    homepage: globalvariables_1.mySelector.tabeLogHomepageSelector,
-    shopphone: globalvariables_1.mySelector.tabeLogTelephoneSelector,
-    shopphone2: globalvariables_1.mySelector.tabeLogTelephone2Selector,
-};
+const puppScraper = new ElScrapeCore0715_1.Scrape(logger);
+// mkdir
+const mkdirManager = new ElMkdir0414_1.default(logger);
 // desktop path
 const dir_home = (_a = process.env[process.platform == "win32" ? "USERPROFILE" : "HOME"]) !== null && _a !== void 0 ? _a : "";
 const dir_desktop = path.join(dir_home, "Desktop");
@@ -123,10 +85,12 @@ let isQuiting;
 let finalCsvArray = [];
 // final Result Array
 let finalResultArray = [];
+// pref counter
+let prefUrlSuccessCounter = 0;
 // area counter
-let areaSuccessCounter = 0;
+let areaUrlSuccessCounter = 0;
 // city counter
-let citySuccessCounter = 0;
+let cityUrlSuccessCounter = 0;
 // create window
 const createWindow = () => {
     try {
@@ -146,17 +110,10 @@ const createWindow = () => {
         mainWindow.loadFile(path.join(__dirname, "../index.html"));
         // ready
         mainWindow.once("ready-to-show", () => {
-            // dev mode
-            mainWindow.webContents.openDevTools();
-        });
-        // minimize
-        mainWindow.on("will-resize", (event) => {
-            // cancel
-            event.preventDefault();
-            // hide window
-            mainWindow.hide();
-            // return false
-            event.returnValue = false;
+            if (!electron_1.app.isPackaged) {
+                // dev mode
+                mainWindow.webContents.openDevTools();
+            }
         });
         // close
         mainWindow.on("close", (event) => {
@@ -192,6 +149,8 @@ electron_1.app.on("ready", () => __awaiter(void 0, void 0, void 0, function* () 
     logger.info("app: electron is ready");
     // create window
     createWindow();
+    // make dir
+    yield mkdirManager.mkDir('csv');
     // icon
     const icon = electron_1.nativeImage.createFromPath(path.join(__dirname, "../assets/gourmet.ico"));
     // tray
@@ -296,10 +255,12 @@ electron_1.ipcMain.on("page", (_, arg) => __awaiter(void 0, void 0, void 0, func
 electron_1.ipcMain.on("csv", (event, _) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         logger.info("ipc: csv mode");
+        // csv path
+        const csvPath = yield csvMaker.showCSVDialog(mainWindow);
         // get CSV data
-        const result = yield csvMaker.showCSVDialog(mainWindow);
+        const result = yield csvMaker.getCsvData(csvPath);
         // return csv data
-        event.sender.send("shopinfoCsvlist", result.flat());
+        event.sender.send("shopinfoCsvlist", result);
     }
     catch (e) {
         // show error message
@@ -329,40 +290,23 @@ electron_1.ipcMain.on("error", (_, arg) => __awaiter(void 0, void 0, void 0, fun
     }
     finally {
         // close window
-        puppScraper.doClose();
+        yield puppScraper.doClose();
     }
 }));
 // scrape
 electron_1.ipcMain.on("scrape", (event, arg) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         logger.info("ipc: scrape mode");
+        // shop success counter
+        let shopSuccessCounter = 0;
+        // shop fail counter
+        let shopFailCounter = 0;
         // result
         let tmpResult = '';
         // total counter
         let totalCounter = arg.record.length;
         // error array
         let errorResultArray = [];
-        // initialize counter
-        areaSuccessCounter = 0;
-        citySuccessCounter = 0;
-        // db 
-        const initDatabase = `
-    CREATE TABLE IF NOT EXISTS status (
-      id INTEGER PRIMARY KEY,
-      area INTEGER,
-      city INTEGER,
-      cateogry INTEGER
-    );`;
-        // create db 
-        database.exec(initDatabase);
-        // insert into status
-        const insertStatus = database.prepare(`
-      INSERT INTO status (id, area, city, category)
-      VALUES (?, ?, ?, ?)
-    `);
-        insertStatus.run(1, 0, 0, 0);
-        // tag regexp
-        const regex = new RegExp("(<([^>]+)>)", "gi");
         // initialize CSV array
         finalResultArray = [];
         // initialize scraper
@@ -375,7 +319,6 @@ electron_1.ipcMain.on("scrape", (event, arg) => __awaiter(void 0, void 0, void 0
                 // shop data
                 let myShopObj = {
                     shopname: "", // shopname
-                    shopnameruby: "", // shopname ruby
                     station: "", // status
                     shopname2: "", // shopname2
                     genre: "", // genre
@@ -383,66 +326,92 @@ electron_1.ipcMain.on("scrape", (event, arg) => __awaiter(void 0, void 0, void 0
                     reservable: "", // reservable
                     address1: "", // address1
                     address2: "", // address2
-                    monday: "", // monday
-                    tuesday: "", // tuesday
-                    wednesday: "", // wednesday
-                    thursday: "", // thursday
-                    friday: "", // friday
-                    saturday: "", // saturday
-                    sunday: "", // sunday
-                    holiday: "", // holiday
-                    creditcard: "", // creditcard
-                    electronicmoney: "", // electronic money
-                    codepayment: "", // code payment
+                    address3: "", // address3
+                    businesstime: "", // businesstime
                     seat: "", // seat
-                    capacity: "", // reservable
-                    privateroom: "", // privateroom
-                    vip: "", // vip
-                    smoking: "", // smoking
-                    parking: "", // parking
-                    alldrink: "", // alldrink
                     homepage: "", // homepage
                     shopphone: "", // shopphone
                     shopphone2: "", // shopphone2
                 };
                 // goto top
-                yield puppScraper.doGo(url);
+                yield puppScraper.doGo(url[0]);
                 // wait for 2 sec
                 yield puppScraper.doWaitFor(2 * globalvariables_1.myProperties.WAIT_SECOND);
-                logger.debug(`app: scraping ${url}`);
+                logger.debug(`app: scraping ${url[0]}`);
                 // update target url
-                event.sender.send("statusUpdate", url);
-                // URLloop
-                Object.keys(tabeLogSelectors).forEach((key) => __awaiter(void 0, void 0, void 0, function* () {
-                    // result
-                    tmpResult = '';
-                    // scrape
-                    const result = yield doScrape(tabeLogSelectors[key]);
-                    // empty evaluation
-                    const isEmpty = Object.keys(result).length === 0 && result.constructor === Object;
-                    // empty
-                    if (!isEmpty) {
-                        // tag exists
-                        if (regex.test(result)) {
-                            // tag removal
-                            tmpResult = result.replace(/(<([^>]+)>)/gi, "");
-                        }
-                        else {
-                            // tag 
-                            tmpResult = result;
-                        }
-                        // set result
-                        myShopObj[`${key}`] = tmpResult;
-                    }
-                }));
+                event.sender.send("statusUpdate", url[0]);
+                // result
+                tmpResult = '';
+                // shopname
+                const shopname = yield doScrape(globalvariables_1.mySelector.tabeLogMainShopnameSelector);
+                const checkedShopName = checkEvaluation(shopname);
+                myShopObj['shopname'] = checkedShopName;
+                // station
+                const station = yield doScrape(globalvariables_1.mySelector.tabeLogStationSelector);
+                const checkedStation = checkEvaluation(station);
+                myShopObj['station'] = checkedStation;
+                // shopname2
+                const shopname2 = yield doScrape(globalvariables_1.mySelector.tabeLogMainSubshopname);
+                const checkedShopName2 = checkEvaluation(shopname2);
+                myShopObj['shopname2'] = checkedShopName2;
+                // genre
+                const genre = yield doScrape(globalvariables_1.mySelector.tabelLogGenreSelector);
+                const checkedGenre = checkEvaluation(genre);
+                myShopObj['genre'] = checkedGenre;
+                // telephone
+                const telephone = yield doScrape(globalvariables_1.mySelector.tabeLogReservephoneSelector);
+                const checkedTelephone = checkEvaluation(telephone);
+                myShopObj['telephone'] = checkedTelephone;
+                // address1
+                const address1 = yield doScrape(globalvariables_1.mySelector.tabeLogAddress1Selector);
+                const checkedAddress1 = checkEvaluation(address1);
+                myShopObj['address1'] = checkedAddress1;
+                // address2
+                const address2 = yield doScrape(globalvariables_1.mySelector.tabeLogAddress2Selector);
+                const checkedAddress2 = checkEvaluation(address2);
+                myShopObj['address2'] = checkedAddress2;
+                // address3
+                const address3 = yield doScrape(globalvariables_1.mySelector.tabeLogAddress3Selector);
+                const checkedAddress3 = checkEvaluation(address3);
+                myShopObj['address3'] = checkedAddress3;
+                // businesstime
+                const businesstime = yield doScrape(globalvariables_1.mySelector.tabeLogBusinesstimeSelector);
+                const checkedBusinesstime = checkEvaluation(businesstime);
+                myShopObj['businesstime'] = checkedBusinesstime;
+                // seat
+                const seat = yield doScrape(globalvariables_1.mySelector.tabeLogSheetSelector);
+                const checkedSeat = checkEvaluation(seat);
+                myShopObj['seat'] = checkedSeat;
+                // homepage
+                const homepage = yield doScrape(globalvariables_1.mySelector.tabeLogHomepageSelector);
+                const checkedHomepage = checkEvaluation(homepage);
+                myShopObj['homepage'] = checkedHomepage;
+                // shopphone
+                const shopphone = yield doScrape(globalvariables_1.mySelector.tabeLogTelephoneSelector);
+                const checkedShopphone = checkEvaluation(shopphone);
+                myShopObj['shopphone'] = checkedShopphone;
+                // shopphone2
+                const shopphone2 = yield doScrape(globalvariables_1.mySelector.tabeLogTelephone2Selector);
+                const checkedShopphone2 = checkEvaluation(shopphone2);
+                myShopObj['shopphone2'] = checkedShopphone2;
+                // shop counter
+                shopSuccessCounter++;
                 // push into array
                 finalResultArray.push(myShopObj);
             }
             catch (err) {
+                // shop counter
+                shopFailCounter++;
                 // push into error url array
-                errorResultArray.push({ url: url });
+                errorResultArray.push({ url: url[0] });
                 // error
                 logger.error(err);
+            }
+            finally {
+                // send success counter
+                event.sender.send("success", shopSuccessCounter);
+                // send fail counter
+                event.sender.send("fail", shopFailCounter);
             }
         }
         // CSV file name
@@ -453,17 +422,6 @@ electron_1.ipcMain.on("scrape", (event, arg) => __awaiter(void 0, void 0, void 0
         // make csv
         csvMaker.makeCsvData(finalResultArray, globalvariables_1.myArrays.columns, nowtime);
         logger.debug("CSV writing finished");
-        // error exists
-        if (errorResultArray.length > 0) {
-            // error csv file name
-            const errornowtime = `${dir_desktop}\\error_${new Date()
-                .toISOString()
-                .replace(/[^\d]/g, "")
-                .slice(0, 14)}.csv`;
-            // make csv
-            csvMaker.makeCsvData(errorResultArray, globalvariables_1.myArrays.columns, errornowtime);
-            logger.debug("error CSV writing finished");
-        }
         // show finished message
         dialogMaker.showmessage("info", "scraping finished");
     }
@@ -477,61 +435,24 @@ electron_1.ipcMain.on("scrape", (event, arg) => __awaiter(void 0, void 0, void 0
         }
     }
     finally {
-        // close puppeteer
-        yield puppScraper.doClose();
     }
 }));
 // scrape url
 electron_1.ipcMain.on("scrapeurl", (event, arg) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c;
     try {
         logger.info("ipc: scrape mode");
         // initialize counter
-        areaSuccessCounter = 0;
-        citySuccessCounter = 0;
+        areaUrlSuccessCounter = 0;
+        cityUrlSuccessCounter = 0;
         // pref index
         const prefindex = Number(arg.index);
         // pref
         const pref = String(arg.pref);
-        // init db
-        const initDatabase = `
-    CREATE TABLE IF NOT EXISTS urlstatus (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      prefecture INTEGER,
-      area INTEGER,
-      city INTEGER,
-      category INTEGER
-    );`;
-        // create db 
-        database.exec(initDatabase);
-        // select status
-        const selectUrlStatus = database.prepare('SELECT * FROM urlstatus WHERE prefecture = ?');
-        // get all
-        const selectUrlResult = selectUrlStatus.get(prefindex);
-        console.log(selectUrlResult);
-        // not undefined
-        if (selectUrlResult) {
-            // area
-            cacheMaker.set('area', selectUrlResult.area);
-            // city
-            cacheMaker.set('city', selectUrlResult.city);
-            // category
-            cacheMaker.set('category', selectUrlResult.category);
-            logger.debug("scrapeurl: cache updated");
-        }
-        else {
-            // insert to urlstatus
-            const insertUrlStatus = database.prepare(`INSERT INTO urlstatus (prefecture, area, city, category) VALUES (?, ?, ?, ?)`);
-            // run insert
-            insertUrlStatus.run(prefindex, 0, 0, 0);
-            // area
-            cacheMaker.set('area', 0);
-            // city
-            cacheMaker.set('city', 0);
-            // category
-            cacheMaker.set('category', 0);
-            logger.debug("scrapeurl: db insert finished");
-        }
+        // start area index
+        const startAreaindex = Number(arg.area) + 1;
+        // start city index
+        const startCityindex = Number(arg.city) + 1;
+        logger.debug("scrapeurl: db insert finished");
         // pref padded
         const prefPadded = String(prefindex).padStart(2, '0');
         logger.debug(`scrapeurl: ${globalvariables_1.myConst.TABELOG_BASE}${pref}/`);
@@ -539,177 +460,154 @@ electron_1.ipcMain.on("scrapeurl", (event, arg) => __awaiter(void 0, void 0, voi
         yield puppScraper.init();
         // goto top
         yield puppScraper.doGo(`${globalvariables_1.myConst.TABELOG_BASE}${pref}/`);
-        logger.debug(`scraping area: ${globalvariables_1.myConst.TABELOG_BASE}${pref}/`);
+        logger.debug(`scrapeurl: scraping area: ${globalvariables_1.myConst.TABELOG_BASE}${pref}/`);
         // url exists
-        if (yield puppScraper.doCheckSelector(globalvariables_1.mySelector.tabeLogTotalSelector)) {
-            logger.debug("scrape area: url exists");
-            // wait for datalist
-            yield puppScraper.doWaitFor(globalvariables_1.myProperties.WAIT_SECOND);
-            // total tag
-            const tmpPreftotal = yield puppScraper.doMultiEval(globalvariables_1.mySelector.tabeLogTotalSelector, "innerHTML");
-            // tag removal
-            const tmpPrefTotalNum = tmpPreftotal[0].replace(/<[^>]*>/g, '');
-            // totalCounter
-            const totalPrefCounter = Number(tmpPrefTotalNum);
-            // update total
-            event.sender.send("preftotal", totalPrefCounter);
-            logger.debug(`prefecture total is ${totalPrefCounter} urls`);
-            // over limit
-            if (totalPrefCounter > globalvariables_1.myProperties.PAGE_LIMIT) {
-                // areano
-                const areano = Number((_a = cacheMaker.get('area')) !== null && _a !== void 0 ? _a : 0) + 1;
-                console.log('areano: ' + areano);
+        if (!(yield puppScraper.doCheckSelector(globalvariables_1.mySelector.tabeLogTotalSelector))) {
+            throw new Error('scrapeurl: scrape area: no key data');
+        }
+        logger.debug("scrapeurl: url exists");
+        // wait for datalist
+        yield puppScraper.doWaitFor(globalvariables_1.myProperties.WAIT_SECOND);
+        // total tag
+        const tmpPreftotal = yield puppScraper.doMultiEval(globalvariables_1.mySelector.tabeLogTotalSelector, "innerHTML");
+        // tag removal
+        const tmpPrefTotalNum = tmpPreftotal[0].replace(/<[^>]*>/g, '');
+        // totalCounter
+        const totalPrefCounter = Number(tmpPrefTotalNum);
+        // pref total
+        event.sender.send("preftotal", totalPrefCounter);
+        // update total
+        event.sender.send("scrapeurl", totalPrefCounter);
+        logger.debug(`scrapeurl: prefecture total is ${totalPrefCounter} urls`);
+        // over limit
+        if (totalPrefCounter <= globalvariables_1.myProperties.PAGE_LIMIT) {
+            throw new Error('scrapeurl: over total');
+        }
+        console.log(startAreaindex);
+        // numbers for loop
+        const areaNumberArray = makeNumberRange(startAreaindex, 31);
+        // area loop
+        for (let areaNum of areaNumberArray) {
+            try {
+                areaUrlSuccessCounter = 0;
+                // zero
+                const zeroPadded = String(areaNum).padStart(2, '0');
+                // area url
+                const areaUrl = `${globalvariables_1.myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/`;
+                // update target url
+                event.sender.send("statusUpdate", areaUrl);
+                // goto top
+                yield puppScraper.doGo(areaUrl);
+                logger.debug(`scrapeurl: ${areaUrl}`);
+                // wait for datalist
+                yield puppScraper.doWaitFor(globalvariables_1.myProperties.WAIT_SECOND);
+                // url exists
+                if (!(yield puppScraper.doCheckSelector(globalvariables_1.mySelector.tabeLogTotalSelector))) {
+                    logger.debug('scrapeurl: area continue');
+                    continue;
+                }
+                // total
+                const tmpAreaTotal = yield puppScraper.doMultiEval(globalvariables_1.mySelector.tabeLogTotalSelector, "innerHTML");
+                // total number
+                const tmpAreaTotalNum = tmpAreaTotal[0].replace(/<[^>]*>/g, '');
+                // totalCounter
+                const totalAreaCounter = Number(tmpAreaTotalNum);
+                // area total
+                event.sender.send("areatotal", totalAreaCounter);
+                logger.debug(`scrapeurl: area total is ${totalAreaCounter}`);
+                // over limit
+                if (totalAreaCounter <= globalvariables_1.myProperties.PAGE_LIMIT) {
+                    logger.debug(`scrapeurl: total is ${totalAreaCounter}`);
+                    // page counter
+                    const areaPageCounter = Math.ceil(totalAreaCounter / 20);
+                    // final url
+                    const finalAreaUrl = yield doScrapeUrl(areaUrl + 'rstLst', globalvariables_1.mySelector.tabeLogUrlSelector, 'area', areaPageCounter, event);
+                    logger.debug('scrapeurl: ');
+                    // push into array
+                    finalCsvArray.push(finalAreaUrl);
+                    continue;
+                }
+                logger.debug('scrapeurl: area total exceed 1200');
                 // numbers for loop
-                const areaNumberArray = makeNumberRange(areano, 31);
-                // area loop
-                for (let areaNum of areaNumberArray) {
+                const cityNumberArray = makeNumberRange(startCityindex, 60);
+                // city loop
+                for (let cityNum of cityNumberArray) {
                     try {
-                        // zero
-                        const zeroPadded = String(areaNum).padStart(2, '0');
-                        // area url
-                        const areaUrl = `${globalvariables_1.myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/`;
+                        cityUrlSuccessCounter = 0;
+                        // city number
+                        const cityPadded = String(cityNum).padStart(2, '0');
+                        // city url
+                        const cityUrl = `${globalvariables_1.myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/`;
                         // update target url
-                        event.sender.send("statusUpdate", areaUrl);
+                        event.sender.send("statusUpdate", cityUrl);
                         // goto top
-                        yield puppScraper.doGo(areaUrl);
-                        logger.debug(`scraping area: ${areaUrl}`);
+                        yield puppScraper.doGo(cityUrl);
+                        logger.debug(`scrapeurl: ${cityUrl}`);
                         // wait for datalist
                         yield puppScraper.doWaitFor(globalvariables_1.myProperties.WAIT_SECOND);
                         // url exists
-                        if (yield puppScraper.doCheckSelector(globalvariables_1.mySelector.tabeLogTotalSelector)) {
-                            // total
-                            const tmpAreaTotal = yield puppScraper.doMultiEval(globalvariables_1.mySelector.tabeLogTotalSelector, "innerHTML");
-                            // total number
-                            const tmpAreaTotalNum = tmpAreaTotal[0].replace(/<[^>]*>/g, '');
-                            // totalCounter
-                            const totalAreaCounter = Number(tmpAreaTotalNum);
-                            // update total
-                            event.sender.send("areatotal", totalAreaCounter);
-                            logger.debug(`area total is ${totalAreaCounter}`);
-                            // over limit
-                            if (totalAreaCounter > globalvariables_1.myProperties.PAGE_LIMIT) {
-                                logger.debug('area total exceed 1200');
-                                // cityno
-                                const cityno = Number((_b = cacheMaker.get('city')) !== null && _b !== void 0 ? _b : 0) + 1;
-                                console.log('cityno: ' + cityno);
-                                // numbers for loop
-                                const cityNumberArray = makeNumberRange(cityno, 60);
-                                // city loop
-                                for (let cityNum of cityNumberArray) {
-                                    try {
-                                        // area
-                                        cacheMaker.set('city', cityNum);
-                                        // city number
-                                        const cityPadded = String(cityNum).padStart(2, '0');
-                                        // city url
-                                        const cityUrl = `${globalvariables_1.myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/`;
-                                        // update target url
-                                        event.sender.send("statusUpdate", cityUrl);
-                                        // goto top
-                                        yield puppScraper.doGo(cityUrl);
-                                        logger.debug(`scraping city: ${cityUrl}`);
-                                        // wait for datalist
-                                        yield puppScraper.doWaitFor(globalvariables_1.myProperties.WAIT_SECOND);
-                                        // url exists
-                                        if (yield puppScraper.doCheckSelector(globalvariables_1.mySelector.tabeLogTotalSelector)) {
-                                            // total
-                                            const tmpCityTotal = yield puppScraper.doMultiEval(globalvariables_1.mySelector.tabeLogTotalSelector, "innerHTML");
-                                            // total number
-                                            const tmpCityTotalNum = tmpCityTotal[0].replace(/<[^>]*>/g, '');
-                                            // totalCounter
-                                            const totalCityCounter = Number(tmpCityTotalNum);
-                                            logger.debug(`city total is ${totalCityCounter}`);
-                                            // update total
-                                            event.sender.send("citytotal", totalCityCounter);
-                                            // page counter
-                                            const cityPageCounter = Math.ceil(totalCityCounter / 20);
-                                            // over 1200
-                                            if (totalCityCounter > globalvariables_1.myProperties.PAGE_LIMIT) {
-                                                logger.debug('city total exceed 1200');
-                                                // cityno
-                                                const categoryno = Number((_c = cacheMaker.get('category')) !== null && _c !== void 0 ? _c : 0) + 1;
-                                                console.log('categoryno: ' + categoryno);
-                                                // category loop
-                                                for (let i = categoryno; i < globalvariables_1.myArrays.categories.length; i++) {
-                                                    try {
-                                                        // area
-                                                        cacheMaker.set('category', i);
-                                                        // city url
-                                                        const categoryUrl = `${globalvariables_1.myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${globalvariables_1.myArrays.categories[i]}`;
-                                                        // update target url
-                                                        event.sender.send("statusUpdate", categoryUrl);
-                                                        // goto top
-                                                        yield puppScraper.doGo(categoryUrl);
-                                                        logger.debug(`scraping category: ${categoryUrl}`);
-                                                        // wait for datalist
-                                                        yield puppScraper.doWaitFor(globalvariables_1.myProperties.WAIT_SECOND);
-                                                        // url exists
-                                                        if (yield puppScraper.doCheckSelector(globalvariables_1.mySelector.tabeLogGenreTotalSelector)) {
-                                                            logger.debug(`scraping category: get total started`);
-                                                            // total
-                                                            const tmpCategoryTotal = yield puppScraper.doMultiEval(globalvariables_1.mySelector.tabeLogGenreTotalSelector, "innerHTML");
-                                                            // total number
-                                                            const tmpCategoriesTotalNum = tmpCategoryTotal[0].replace(/<[^>]*>/g, '');
-                                                            // update total
-                                                            event.sender.send("categorytotal", tmpCategoriesTotalNum);
-                                                            // totalCounter
-                                                            const totalCategoriesCounter = Number(tmpCategoriesTotalNum);
-                                                            // page counter
-                                                            const categoryPageCounter = Math.ceil(totalCategoriesCounter / 20);
-                                                            // final category url
-                                                            const finalCategoryUrl = yield doScrapeUrl(categoryUrl, globalvariables_1.mySelector.tabeLogCategoryUrlSelector, 'category', categoryPageCounter, event);
-                                                            logger.debug('category result: ');
-                                                            finalCsvArray.push(finalCategoryUrl);
-                                                        }
-                                                        else {
-                                                            logger.debug('no category selector');
-                                                            continue;
-                                                        }
-                                                    }
-                                                    catch (e) {
-                                                        // error
-                                                        logger.error(e);
-                                                        continue;
-                                                    }
-                                                }
-                                            }
-                                            else {
-                                                logger.debug('city: not exceed 1200');
-                                                logger.debug(`city: total is ${totalCityCounter}`);
-                                                // final url
-                                                const finalCityUrl = yield doScrapeUrl(cityUrl + 'rstLst', globalvariables_1.mySelector.tabeLogUrlSelector, 'city', cityPageCounter, event);
-                                                logger.debug('city result: ');
-                                                finalCsvArray.push(finalCityUrl);
-                                                break;
-                                            }
-                                        }
-                                        else {
-                                            logger.debug('no city selector');
-                                            break;
-                                        }
-                                    }
-                                    catch (e) {
-                                        // error
-                                        logger.error(e);
-                                        break;
-                                    }
-                                }
-                            }
-                            else {
-                                logger.debug('area: not exceed 1200');
-                                logger.debug(`area: total is ${totalAreaCounter}`);
-                                // page counter
-                                const areaPageCounter = Math.ceil(totalAreaCounter / 20);
-                                // final url
-                                const finalAreaUrl = yield doScrapeUrl(areaUrl + 'rstLst', globalvariables_1.mySelector.tabeLogUrlSelector, 'area', areaPageCounter, event);
-                                logger.debug('area result: ');
-                                // push into array
-                                finalCsvArray.push(finalAreaUrl);
-                            }
+                        if (!(yield puppScraper.doCheckSelector(globalvariables_1.mySelector.tabeLogTotalSelector))) {
+                            logger.debug('scrapeurl: no city selector');
+                            break;
                         }
-                        else {
-                            logger.debug('area continue');
+                        // total
+                        const tmpCityTotal = yield puppScraper.doMultiEval(globalvariables_1.mySelector.tabeLogTotalSelector, "innerHTML");
+                        // total number
+                        const tmpCityTotalNum = tmpCityTotal[0].replace(/<[^>]*>/g, '');
+                        // totalCounter
+                        const totalCityCounter = Number(tmpCityTotalNum);
+                        logger.debug(`scrapeurl: city total is ${totalCityCounter}`);
+                        // city total
+                        event.sender.send("citytotal", totalCityCounter);
+                        // page counter
+                        const cityPageCounter = Math.ceil(totalCityCounter / 20);
+                        // over 1200
+                        if (totalCityCounter <= globalvariables_1.myProperties.PAGE_LIMIT) {
+                            logger.debug(`scrapeurl: total is ${totalCityCounter}`);
+                            // final url
+                            const finalCityUrl = yield doScrapeUrl(cityUrl + 'rstLst', globalvariables_1.mySelector.tabeLogUrlSelector, 'city', cityPageCounter, event);
+                            logger.debug('scrapeurl result: ');
+                            // push into array
+                            finalCsvArray.push(finalCityUrl);
                             continue;
+                        }
+                        logger.debug('scrapeurl: city total exceed 1200');
+                        // category loop
+                        for (let i = 0; i < globalvariables_1.myArrays.categories.length; i++) {
+                            try {
+                                // city url
+                                const categoryUrl = `${globalvariables_1.myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${globalvariables_1.myArrays.categories[i]}`;
+                                // update target url
+                                event.sender.send("statusUpdate", categoryUrl);
+                                // goto top
+                                yield puppScraper.doGo(categoryUrl);
+                                logger.debug(`scrapeurl: category: ${categoryUrl}`);
+                                // wait for datalist
+                                yield puppScraper.doWaitFor(globalvariables_1.myProperties.WAIT_SECOND);
+                                // url exists
+                                if (!(yield puppScraper.doCheckSelector(globalvariables_1.mySelector.tabeLogGenreTotalSelector))) {
+                                    logger.debug('scrapeurl: no category selector');
+                                    continue;
+                                }
+                                logger.debug(`scrapeurl: category get total started`);
+                                // total
+                                const tmpCategoryTotal = yield puppScraper.doMultiEval(globalvariables_1.mySelector.tabeLogGenreTotalSelector, "innerHTML");
+                                // total number
+                                const tmpCategoriesTotalNum = tmpCategoryTotal[0].replace(/<[^>]*>/g, '');
+                                // totalCounter
+                                const totalCategoriesCounter = Number(tmpCategoriesTotalNum);
+                                // page counter
+                                const categoryPageCounter = Math.ceil(totalCategoriesCounter / 20);
+                                // final category url
+                                const finalCategoryUrl = yield doScrapeUrl(categoryUrl, globalvariables_1.mySelector.tabeLogCategoryUrlSelector, 'category', categoryPageCounter, event);
+                                // set to csv array
+                                finalCsvArray.push(finalCategoryUrl);
+                            }
+                            catch (e) {
+                                // error
+                                logger.error(e);
+                                continue;
+                            }
                         }
                     }
                     catch (e) {
@@ -718,128 +616,23 @@ electron_1.ipcMain.on("scrapeurl", (event, arg) => __awaiter(void 0, void 0, voi
                     }
                 }
             }
-            else {
-                logger.debug('pref: exceed 1200');
-                logger.debug(`total is ${totalPrefCounter}`);
-            }
-            // nowtime
-            const nowtime = `${dir_desktop}\\${new Date()
-                .toISOString()
-                .replace(/[^\d]/g, "")
-                .slice(0, 14)}`;
-            // file name
-            const targetpath = `${nowtime}_${pref}_url.csv`;
-            // make CSV
-            yield csvMaker.makeCsvData(finalCsvArray.flat(), globalvariables_1.myArrays.urls, targetpath);
-        }
-    }
-    catch (e) {
-        // error
-        logger.error(e);
-        // error
-        if (e instanceof Error) {
-            // show error
-            dialogMaker.showmessage("error", `${e.message}`);
-        }
-    }
-}));
-// pause
-electron_1.ipcMain.on("pause", (_, arg) => __awaiter(void 0, void 0, void 0, function* () {
-    return new Promise((resolve, _) => __awaiter(void 0, void 0, void 0, function* () {
-        var _a, _b, _c, _d;
-        try {
-            logger.info("ipc: pause mode");
-            // db path
-            let targetpath = '';
-            // column array
-            let targetColumnsArray = [];
-            // pref no 
-            const prefno = (_a = arg.index) !== null && _a !== void 0 ? _a : 0;
-            // url mode
-            if (arg.type == "url") {
-                // area
-                const areaCache = Number((_b = cacheMaker.get('area')) !== null && _b !== void 0 ? _b : 0);
-                // city
-                const cityCache = Number((_c = cacheMaker.get('city')) !== null && _c !== void 0 ? _c : 0);
-                // category
-                const categoryCache = Number((_d = cacheMaker.get('category')) !== null && _d !== void 0 ? _d : 0);
-                // update db
-                const updateStatus1 = database.prepare(`UPDATE urlstatus SET area = ? WHERE prefecture = ?`);
-                const updateStatus2 = database.prepare(`UPDATE urlstatus SET city = ? WHERE prefecture = ?`);
-                const updateStatus3 = database.prepare(`UPDATE urlstatus SET category = ? WHERE prefecture = ?`);
-                // update all
-                updateStatus1.run(areaCache, prefno);
-                updateStatus2.run(cityCache, prefno);
-                updateStatus3.run(categoryCache, prefno);
-            }
-            // show question dialog
-            const selected = dialogMaker.showQuetion("Q", "stop", "app will stop ok？scraped data is written to csv file.");
-            // yes
-            if (selected == 0) {
-                // csv array
-                let targetCsvArray;
-                // show pause message
-                dialogMaker.showmessage("info", "stopped.");
-                // nowtime
-                const nowtime = `${dir_desktop}\\${new Date()
-                    .toISOString()
-                    .replace(/[^\d]/g, "")
-                    .slice(0, 14)}`;
-                // url mode
-                if (arg.type == "url") {
-                    // file name
-                    targetpath = `${nowtime}_url.csv`;
-                    // CSV data
-                    targetCsvArray = finalCsvArray.flat();
-                    // columns
-                    targetColumnsArray = globalvariables_1.myArrays.urls;
-                    // make CSV
-                    yield csvMaker.makeCsvData(finalCsvArray, targetColumnsArray, targetpath);
-                    // shop mode
-                }
-                else if (arg.type == "shop") {
-                    // file name
-                    targetpath = `${nowtime}.csv`;
-                    // columns
-                    targetColumnsArray = globalvariables_1.myArrays.columns;
-                    // CSV data
-                    targetCsvArray = finalResultArray.flat();
-                    // make CSV
-                    yield csvMaker.makeCsvData(finalCsvArray, targetColumnsArray, targetpath);
-                }
-                // resolve
-                resolve();
-            }
-            else {
-                // return false
-                return false;
+            catch (e) {
+                // error
+                logger.error(e);
             }
         }
-        catch (e) {
-            // error
-            logger.error(e);
-            // error
-            if (e instanceof Error) {
-                // show error
-                dialogMaker.showmessage("error", `${e.message}`);
-            }
-            return false;
-        }
-        finally {
-            // goto top
-            yield puppScraper.doClose();
-        }
-    }));
-}));
-// clear
-electron_1.ipcMain.on("clear", (_, __) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        logger.info("ipc: clear mode");
-        // insert to urlstatus
-        const insertUrlStatus = database.prepare('DELETE FROM urlstatus');
-        // initialize urlstatus
-        insertUrlStatus.run();
-        logger.info("ipc: deleted");
+        // nowtime
+        const nowtime = `${dir_desktop}\\${new Date()
+            .toISOString()
+            .replace(/[^\d]/g, "")
+            .slice(0, 14)}`;
+        // file name
+        const targetpath = `${nowtime}_${pref}_url.csv`;
+        logger.debug('scrapeurl: making csv...');
+        // make CSV
+        yield csvMaker.makeCsvData(finalCsvArray.flat().flat(), ['url'], targetpath);
+        // show error
+        dialogMaker.showmessage("finished", "URL取得が終わりました");
     }
     catch (e) {
         // error
@@ -874,19 +667,20 @@ electron_1.ipcMain.on("exit", () => __awaiter(void 0, void 0, void 0, function* 
 }));
 // do scraping
 const doScrape = (selector) => __awaiter(void 0, void 0, void 0, function* () {
-    return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
+    return new Promise((resolve, _) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            // wait for 5 sec
-            yield puppScraper.doWaitFor(5 * globalvariables_1.myProperties.WAIT_SECOND);
             // url exists
             if (yield puppScraper.doCheckSelector(selector)) {
-                // wait for datalist
-                yield puppScraper.doWaitFor(2 * globalvariables_1.myProperties.WAIT_SECOND);
                 // url
                 const tmpValues = yield puppScraper.doSingleEval(selector, "innerHTML");
-                logger.debug(tmpValues.trim());
-                // result
-                resolve(tmpValues.trim());
+                // empty
+                if (tmpValues == '') {
+                    resolve('error');
+                }
+                else {
+                    // result
+                    resolve(tmpValues.trim());
+                }
             }
             else {
                 // ignore error
@@ -908,7 +702,7 @@ const doScrape = (selector) => __awaiter(void 0, void 0, void 0, function* () {
 });
 // do scraping
 const doScrapeUrl = (url, selector, mode, limit, event) => __awaiter(void 0, void 0, void 0, function* () {
-    return new Promise((resolve, reject) => __awaiter(void 0, void 0, void 0, function* () {
+    return new Promise((resolve, _) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             // result
             let finalArray = [];
@@ -928,39 +722,51 @@ const doScrapeUrl = (url, selector, mode, limit, event) => __awaiter(void 0, voi
                         yield puppScraper.doWaitFor(2 * globalvariables_1.myProperties.WAIT_SECOND);
                         // url
                         const tmpUrls = yield puppScraper.doMultiEval(selector, "href");
+                        // make url obj
+                        const tmpUrlObj = tmpUrls.map((url) => {
+                            return {
+                                url: url
+                            };
+                        });
                         // result
-                        finalArray.push(tmpUrls);
+                        finalArray.push(tmpUrlObj);
                     }
                     else {
-                        logger.debug('selector: no selector');
+                        logger.debug('scrapeurl: no selector');
                         // result
-                        resolve(finalArray);
+                        continue;
                     }
                 }
                 catch (e) {
                     // error
                     logger.error(e);
+                    logger.debug('scrapeurl: no selector');
                     // result
                     resolve(finalArray);
                 }
                 finally {
+                    // count up
+                    prefUrlSuccessCounter++;
                     // switch on mode
                     switch (mode) {
                         case "area":
-                            areaSuccessCounter++;
+                            // countup
+                            areaUrlSuccessCounter++;
                             // update success
-                            event.sender.send('areasuccess', areaSuccessCounter);
+                            event.sender.send('areasuccess', areaUrlSuccessCounter);
                             break;
                         case "city":
-                            citySuccessCounter++;
+                            // countup
+                            cityUrlSuccessCounter++;
                             // update success
-                            event.sender.send('citysuccess', citySuccessCounter);
+                            event.sender.send('citysuccess', cityUrlSuccessCounter);
                             break;
                         default:
                             logger.debug('out of range');
                     }
                 }
             }
+            logger.debug('scrapeurl: scrape url end');
             // result
             resolve(finalArray);
         }
@@ -977,3 +783,22 @@ const doScrapeUrl = (url, selector, mode, limit, event) => __awaiter(void 0, voi
 });
 // number array
 const makeNumberRange = (start, end) => [...new Array(end - start).keys()].map(n => n + start);
+// empty evaluation
+const checkEvaluation = (value) => {
+    // tag regexp
+    const regex = new RegExp("(<([^>]+)>)", "gi");
+    // isEmpty
+    const isEmpty = Object.keys(value).length === 0 && value.constructor === Object;
+    // empty
+    if (!isEmpty) {
+        // tag exists
+        if (regex.test(value)) {
+            // tag removal
+            return value.replace(/(<([^>]+)>)/gi, "");
+        }
+        else {
+            // tag 
+            return value;
+        }
+    }
+};

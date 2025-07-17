@@ -6,8 +6,9 @@
 
 /** const */
 export namespace myConst {
-  export const COMPANY_NAME: string = "ebisudo";
+  export const DEV_FLG: boolean = false;
   export const APP_NAME: string = "tabelogScraper";
+  export const COMPANY_NAME: string = 'Ebisudo';
   export const CSV_ENCODING: string = "SJIS";
   export const TABELOG_BASE: string = "https://tabelog.com/";
   export const LOG_LEVEL: string = 'all';
@@ -37,87 +38,36 @@ export namespace mySelector {
   export const tabeLogTotalSelector: string = "#container > div.rstlist-contents.clearfix > div.flexible-rstlst > div.flexible-rstlst-main > div.list-controll.clearfix > div > span:nth-child(4)";
   // Tabelog hit selector
   export const tabeLogGenreTotalSelector: string = "#container > div.rstlist-contents.clearfix > div.flexible-rstlst > div > div.list-controll.clearfix > div:nth-child(2) > div > span:nth-child(4) > strong";
-  // Tabelog genre selector
-  export const tabelLogGenreSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(2) > td > span";
   // Tabelog mainshopname selector
   export const tabeLogMainShopnameSelector: string =
     "#rstdtl-head > div.rstdtl-header > section > div.rdheader-title-data > div.rdheader-rstname-wrap > div > h2 > span";
-  // Tabelog mainshopname ruby selector
-  export const tabeLogMainShopnameRubySelector: string =
-    "#rstdtl-head > div.rstdtl-header > section > div.rdheader-title-data > div.rdheader-rstname-wrap > div > span";
   // Tabelog station selector
   export const tabeLogStationSelector: string =
     "#rstdtl-head > div.rstdtl-header > section > div.rdheader-info-data > div > div > div:nth-child(1) > dl.rdheader-subinfo__item.rdheader-subinfo__item--station > dd > div > div.linktree__parent > a > span";
   // Tabelog subshopname selector
   export const tabeLogMainSubshopname: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(1) > td > div > span";
+    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(1) > td";
+  // Tabelog genre selector
+  export const tabelLogGenreSelector: string =
+    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(2) > td > span";
   // Tabelog reserve telephone selector
   export const tabeLogReservephoneSelector: string =
     "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(3) > td > p > strong";
-  // Tabelog reservable selector
-  export const tabeLogReservableSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(4) > td > p";
   // Tabelog address1 selector
   export const tabeLogAddress1Selector: string =
     "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(5) > td > p > span:nth-child(1)";
   // Tabelog address2 selector
   export const tabeLogAddress2Selector: string =
     "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(5) > td > p > span:nth-child(2)";
-  // Tabelog businesstime monday selector
-  export const tabeLogBusinesstimeMonSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(1) > ul > li";
-  // Tabelog businesstime tuesday selector
-  export const tabeLogBusinesstimeTueSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(2) > ul > li";
-  // Tabelog businesstime wednesday selector
-  export const tabeLogBusinesstimeWedSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(3) > ul > li";
-  // Tabelog businesstime thursday selector
-  export const tabeLogBusinesstimeThuSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(4) > ul > li";
-  // Tabelog businesstime friday selector
-  export const tabeLogBusinesstimeFriSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(5) > ul > li";
-  // Tabelog businesstime saturday selector
-  export const tabeLogBusinesstimeSatSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(6) > ul > li";
-  // Tabelog businesstime sunday selector
-  export const tabeLogBusinesstimeSunSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > ul > li:nth-child(7) > ul > li";
-  // Tabelog businesstime holiday selector
-  export const tabeLogBusinesstimeHolSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td > div > ul > li";
-  // Tabelog payment card selector
-  export const tabeLogPaymentCardSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(10) > td > div:nth-child(1) > p";
-  // Tabelog payment electronic mony selector
-  export const tabeLogPaymentElSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(10) > td > div:nth-child(2) > p";
-  // Tabelog payment code selector
-  export const tabeLogPaymentCodeSelector: string =
-    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(10) > td > div:nth-child(3) > p";
+  // Tabelog address3 selector
+  export const tabeLogAddress3Selector: string =
+    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(5) > td > p > span:nth-child(3)";
+  // Tabelog businesstime selector
+  export const tabeLogBusinesstimeSelector: string =
+    "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(7) > td";
   // Tabelog sheet selector
   export const tabeLogSheetSelector: string =
     "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(1) > td > p";
-  // Tabelog reserve limit selector
-  export const tabeLogReserveLimitSelector: string =
-    "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(2) > td > p";
-  // Tabelog privateroom selector
-  export const tabeLogPrivateRoomSelector: string =
-    "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(3) > td > p";
-  // Tabelog rental selector
-  export const tabeLogRentalSelector: string =
-    "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(4) > td > p:nth-child(1)";
-  // Tabelog smoking selector
-  export const tabeLogSmokingSelector: string =
-    "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(5) > td";
-  // Tabelog parking selector
-  export const tabeLogParkingSelector: string =
-    "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(6) > td";
-  // Tabelog alldrink selector
-  export const tabeLogAlldrinkSelector: string =
-    "#rst-data-head > table:nth-child(6) > tbody > tr:nth-child(1) > td > p";
   // Tabelog homepage selector
   export const tabeLogHomepageSelector: string =
     "#rst-data-head > table:nth-child(9) > tbody > tr:nth-child(5) > td > p > a > span";
@@ -133,59 +83,17 @@ export namespace mySelector {
 export namespace myArrays {
   export const columns: string[] = [
     "shopname", // shopname
-    "shopnameruby", // shopname ruby
     "station", // station
     "shopname2", // shopname2
     "genre", // genre
     "telephone", // telephone
-    "reservable", // reservable
     "address1", // address1
     "address2", // address2
-    "monday", // monday
-    "tuesday", // tuesday
-    "wednesday", // wednesday
-    "thursday", // thursday
-    "friday", // friday
-    "saturday", // saturday
-    "sunday", // sunday
-    "holiday", // holiday
-    "creditcard", // creditcard
-    "electronicmoney", // electronic money
-    "codepayment", // code payment
-    "seat", // seat
-    "capacity", // capacity
-    "privateroom", // privateroom
-    "vip", // vip
-    "smoking", // smoking
-    "parking", // parking
-    "alldrink", // alldrink
+    "address3", // address3
+    "businesstime", // businesstime
     "homepage", // homepage
     "shopphone", // shopphone
     "shopphone2", // shopphone2
-  ];
-
-  // columns
-  export const urls: string[] = [
-    "url1", // url1
-    "url2", // url2
-    "url3", // url3
-    "url4", // url4
-    "url5", // url5
-    "url6", // url6
-    "url7", // url7
-    "url8", // url8
-    "url9", // url9
-    "url10", // url10
-    "url11", // url11
-    "url12", // url12
-    "url13", // url13
-    "url14", // url14
-    "url15", // url15
-    "url16", // url16
-    "url17", // url17
-    "url18", // url18
-    "url19", // url19
-    "url20", // url20
   ];
 
   // categories
