@@ -1,0 +1,178 @@
+/*
+/* index.css
+*/
+
+@charset "utf-8";
+
+/* css reset */
+html {
+  -webkit-user-drag: none;
+  cursor: default;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+  padding: 0;
+}
+
+input,
+textarea,
+select,
+button,
+img {
+  -webkit-user-drag: none;
+}
+
+.draggable {
+  -webkit-app-region: drag;
+}
+
+.selectable {
+  cursor: auto;
+}
+
+.operation_area {
+  margin: 20px 0;
+  font-size: 0.8rem;
+}
+
+.operation_area div {
+  padding-left: 10px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.operation_area div input {
+  height: 40px;
+  border: 1px solid #CCC;
+}
+
+.operation_area div input::placeholder {
+  color: #CCC;
+}
+
+/* css */
+body {
+  text-align: center;
+  width: 95%;
+  margin: auto;
+}
+
+h1 {
+  padding: 0 10px;
+  font-size: 1.7rem;
+  color: #fff;
+  background-color: #e40014
+}
+
+h3 {
+  padding: 0 10px;
+  color: #e40014;
+  font-weight: bolder;
+}
+
+p {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+footer {
+  font-size: 0.8rem;
+}
+
+::placeholder {
+  color: #e40014;
+  font-size: 1.7rem;
+  text-align: right;
+}
+
+.wide {
+  width: 800px;
+}
+
+.middle {
+  width: 500px;
+  height: 50px;
+}
+
+.default {
+  width: 300px;
+}
+
+.narrow {
+  width: 100px;
+}
+
+.operation_area {
+  margin: 0 auto;
+  padding: 30px 0;
+  text-align: center;
+}
+
+.operation_area div {
+  margin: 10px auto;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.button-container {
+  margin: 10px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#csvfilepath {
+  font-size: 0.7rem;
+}
+
+.progress_area {
+  font-size: 0.8rem;
+}
+
+.button_area {
+  margin: 20px 0;
+}
+
+/* general buttons */
+.cp_ipselect02 {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 300px;
+  margin: 2em auto;
+  border: 1px solid #bbbbbb;
+  border-radius: 2px;
+}
+.cp_ipselect02 select {
+  width: 100%;
+  padding: 10px 45px 10px 10px;
+  color: #666666;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  z-index: 1;
+  border: none;
+  appearance: none;
+  outline: none;
+  background: transparent;
+}
+.cp_ipselect02::before {
+  position: absolute;
+  right: 15px;
+  content: '';
+  width: 16px;
+  height: 8px;
+  background: #666666;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.cp_ipselect02:after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 45px;
+  content: '';
+  border-left: 1px solid #bbbbbb;
+}

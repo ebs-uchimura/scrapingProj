@@ -5,7 +5,7 @@
  **/
 
 // namespace
-import { myConst, myProperties, myWindows, mySelector, myArrays } from "./consts/globalvariables";
+import { myConst, myCategories, myProperties, myWindows, mySelector, myArrays } from "./consts/globalvariables";
 
 // import modules
 import { BrowserWindow, app, ipcMain, Tray, Menu, nativeImage } from "electron"; // electron
@@ -45,10 +45,6 @@ let finalCsvArray: any = [];
 let finalResultArray: any = [];
 // pref counter
 let prefUrlSuccessCounter: number = 0;
-// area counter
-let areaUrlSuccessCounter: number = 0;
-// city counter
-let cityUrlSuccessCounter: number = 0;
 
 // create window
 const createWindow = (): void => {
@@ -72,7 +68,7 @@ const createWindow = (): void => {
     mainWindow.once("ready-to-show", () => {
       if (!app.isPackaged) {
         // dev mode
-        mainWindow.webContents.openDevTools();
+        // mainWindow.webContents.openDevTools();
       }
     });
 
@@ -170,7 +166,7 @@ app.on("window-all-closed", () => {
  IPC
 */
 /* page */
-ipcMain.on("page", async (_, arg) => {
+ipcMain.on("page", async (_: any, arg: any) => {
   try {
     logger.info("ipc: page mode");
     // target url
@@ -227,7 +223,7 @@ ipcMain.on("page", async (_, arg) => {
 });
 
 // CSV
-ipcMain.on("csv", async (event, _) => {
+ipcMain.on("csv", async (event: any, _: any) => {
   try {
     logger.info("ipc: csv mode");
     // csv path
@@ -249,7 +245,7 @@ ipcMain.on("csv", async (event, _) => {
 });
 
 // error
-ipcMain.on("error", async (_, arg) => {
+ipcMain.on("error", async (_: any, arg: any) => {
   try {
     logger.info("ipc: error mode");
     // show error
@@ -277,8 +273,6 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
     let shopSuccessCounter: number = 0;
     // shop fail counter
     let shopFailCounter: number = 0;
-    // result
-    let tmpResult: string = '';
     // total counter
     let totalCounter: number = arg.record.length;
     // error array
@@ -317,8 +311,6 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
         logger.debug(`app: scraping ${url[0]}`);
         // update target url
         event.sender.send("statusUpdate", url[0]);
-        // result
-        tmpResult = '';
         // shopname
         const shopname: string = await doScrape(mySelector.tabeLogMainShopnameSelector);
         const checkedShopName: string = checkEvaluation(shopname);
@@ -373,7 +365,6 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
         myShopObj['shopphone2'] = checkedShopphone2;
         // shop counter
         shopSuccessCounter++;
-
         // push into array
         finalResultArray.push(myShopObj);
 
@@ -418,9 +409,6 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
 ipcMain.on("scrapeurl", async (event: any, arg: any) => {
   try {
     logger.info("ipc: scrape mode");
-    // initialize counter
-    areaUrlSuccessCounter = 0;
-    cityUrlSuccessCounter = 0;
     // pref index
     const prefindex: number = Number(arg.index);
     // pref
@@ -456,22 +444,18 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
     const totalPrefCounter: number = Number(tmpPrefTotalNum);
     // pref total
     event.sender.send("preftotal", totalPrefCounter);
-    // update total
-    event.sender.send("scrapeurl", totalPrefCounter);
     logger.debug(`scrapeurl: prefecture total is ${totalPrefCounter} urls`);
 
     // over limit
     if (totalPrefCounter <= myProperties.PAGE_LIMIT) {
       throw new Error('scrapeurl: over total');
     }
-    console.log(startAreaindex);
     // numbers for loop
     const areaNumberArray: number[] = makeNumberRange(startAreaindex, 31);
 
     // area loop
     for (let areaNum of areaNumberArray) {
       try {
-        areaUrlSuccessCounter = 0;
         // zero
         const zeroPadded: string = String(areaNum).padStart(2, '0');
         // area url
@@ -497,13 +481,12 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
         const tmpAreaTotalNum: string = tmpAreaTotal[0].replace(/<[^>]*>/g, '');
         // totalCounter
         const totalAreaCounter: number = Number(tmpAreaTotalNum);
-        // area total
-        event.sender.send("areatotal", totalAreaCounter);
         logger.debug(`scrapeurl: area total is ${totalAreaCounter}`);
 
         // over limit
         if (totalAreaCounter <= myProperties.PAGE_LIMIT) {
           logger.debug(`scrapeurl: total is ${totalAreaCounter}`);
+
           // page counter
           const areaPageCounter: number = Math.ceil(totalAreaCounter / 20);
           // final url
@@ -514,13 +497,13 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
           continue;
         }
         logger.debug('scrapeurl: area total exceed 1200');
+
         // numbers for loop
         const cityNumberArray: number[] = makeNumberRange(startCityindex, 60);
 
         // city loop
         for (let cityNum of cityNumberArray) {
           try {
-            cityUrlSuccessCounter = 0;
             // city number
             const cityPadded: string = String(cityNum).padStart(2, '0');
             // city url
@@ -547,8 +530,6 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
             // totalCounter
             const totalCityCounter: number = Number(tmpCityTotalNum);
             logger.debug(`scrapeurl: city total is ${totalCityCounter}`);
-            // city total
-            event.sender.send("citytotal", totalCityCounter);
             // page counter
             const cityPageCounter: number = Math.ceil(totalCityCounter / 20);
 
@@ -565,10 +546,10 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
             logger.debug('scrapeurl: city total exceed 1200');
 
             // category loop
-            for (let i = 0; i < myArrays.categories.length; i++) {
+            for (let i = 0; i < myCategories.GENRES.length; i++) {
               try {
                 // city url
-                const categoryUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${myArrays.categories[i]}`;
+                const categoryUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${myCategories.GENRES[i]}`;
                 // update target url
                 event.sender.send("statusUpdate", categoryUrl);
                 // goto top
@@ -677,7 +658,6 @@ const doScrape = async (selector: string): Promise<string> => {
           // result
           resolve(tmpValues.trim());
         }
-
       } else {
         // ignore error
         resolve("");
@@ -742,24 +722,9 @@ const doScrapeUrl = async (url: string, selector: string, mode: string, limit: n
 
         } finally {
           // count up
-          prefUrlSuccessCounter++;
-          // switch on mode
-          switch (mode) {
-            case "area":
-              // countup
-              areaUrlSuccessCounter++;
-              // update success
-              event.sender.send('areasuccess', areaUrlSuccessCounter);
-              break;
-            case "city":
-              // countup
-              cityUrlSuccessCounter++;
-              // update success
-              event.sender.send('citysuccess', cityUrlSuccessCounter);
-              break;
-            default:
-              logger.debug('out of range');
-          }
+          prefUrlSuccessCounter += 20;
+          // update success
+          event.sender.send('prefsuccess', prefUrlSuccessCounter);
         }
       }
       logger.debug('scrapeurl: scrape url end');

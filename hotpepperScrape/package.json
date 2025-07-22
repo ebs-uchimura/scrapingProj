@@ -1,13 +1,13 @@
 {
-  "name": "gourmetscrape",
-  "productName": "gourmetscrape",
-  "version": "1.3.2",
-  "description": "Electron application for scraping",
-  "main": "build/tabelog.js",
+  "name": "hotpepperscrape",
+  "productName": "hotpepperscrape",
+  "version": "1.0.0",
+  "description": "Electron application for hotpepperscrape",
+  "main": "build/hotpepper.js",
   "scripts": {
     "build": "tsc && chcp 65001",
-    "package-win": "tsc && chcp 65001 && electron-packager . --asar --overwrite --platform=win32 --arch=ia32 --prune=false --icon=./assets/gourmet.ico --out=release-builds",
-    "start": "tsc && chcp 65001 && electron ."
+    "package-win": "npm run build && electron-packager . --asar --overwrite --platform=win32 --arch=ia32 --prune=false --icon=./assets/pepper.ico --out=release-builds",
+    "start": "npm run build && electron ."
   },
   "keywords": [],
   "author": "ebs-uchimura <uchimura@ebisu-do.jp>",

@@ -1,88 +1,35 @@
 /*
  * andbar.ts
  *
- * function：scraping electron app
+ * function：scraping andbar app
  **/
 
 "use strict";
 
-// ◇ modules
-import {
-  BrowserWindow,
-  app,
-  ipcMain,
-  Tray,
-  Menu,
-  nativeImage,
-} from "electron"; // electron
-import * as path from "path"; // path
-import { Scrape } from "./class/Scrape0119"; // scraper
-import Dialog from "./class/ElectronDialog0118"; // dialog
-import Logger from "./class/Logger0928"; // logger
-import CSV from "./class/ElectronCsv0119"; // csv
+/// namespace
+import { myConst, myWindows, mySelector, myArrays, myColumn } from "./consts/globalvariables";
 
-// ◇ constants
-const PAGE_COUNT: number = 10; // shop page numbers
-const ANDBAR_FIXED_URL: string = "https://andbar.net/map/?prefecture="; // root URL
-const CSV_ENCODING: string = "SJIS"; // csv char code
+/// modules
+import { BrowserWindow, app, ipcMain, Tray, Menu, nativeImage } from "electron"; // electron
+import * as path from "node:path"; // path
+import { Scrape } from "./class/ElScrapeCore0719"; // scraper
+import Dialog from "./class/ElDialog0721"; // dialog
+import Logger from "./class/ElLogger"; // logger
+import CSV from "./class/ElCsv0414"; // csv
 
-// ◇ config
 // logger
-const logger: Logger = new Logger("../../logs");
+const logger: Logger = new Logger(myConst.COMPANY_NAME, myConst.APP_NAME, 'all');
 // dialog
-const dialogMaker: Dialog = new Dialog();
+const dialogMaker: Dialog = new Dialog(logger);
 // csv
-const csvMaker: CSV = new CSV(CSV_ENCODING);
+const csvMaker: CSV = new CSV(myConst.CSV_ENCODING, logger);
 // puppeteer scraper
-const puppScraper: Scrape = new Scrape();
+const puppScraper: Scrape = new Scrape(logger);
 // root path
-const dir_home =
+const dir_home: string =
   process.env[process.platform == "win32" ? "USERPROFILE" : "HOME"] ?? "";
 // desktop path
-const dir_desktop = path.join(dir_home, "Desktop");
-
-// ◇ selector
-// see more
-const AndBarSeemoreSelector: string =
-  "#root > div:nth-child(2) > div > section > div.css-1q8fput > div.css-9hqybf > div.css-11yd8q > nav > div > p > i";
-const AndBarSeemoreNextSelector: string =
-  "#root > div:nth-child(2) > div > section > div.css-1q8fput > div.css-9hqybf > div.css-11yd8q > nav > div > p:nth-child(3)";
-// total
-const AndBarTotalSelector: string =
-  "#root > div:nth-child(2) > div > section > div.css-lr6r9q > p > span";
-// columns
-const globalColumns: { [key: string]: string } = {
-  url: 'url', // url
-  shopname: 'shopname', // shopname
-  budget: 'budget', // budget
-  telephone: 'telephone', // telephone
-  address: 'address', // address
-  system: 'system', // system
-  businesstime1: 'businesstime1', // businesstime1
-  businesstime2: 'businesstime2', // businesstime2
-  businesstime3: 'businesstime3', // businesstime3
-  businesstime4: 'businesstime4', // businesstime4
-  businesstime5: 'businesstime5', // businesstime5
-  businesstime6: 'businesstime6', // businesstime6
-  businesstime7: 'businesstime7', // businesstime7
-  businesstime8: 'businesstime8', // businesstime8
-  info2: 'info2', // info2
-  info3: 'info3', // info3
-  info4: 'info4', // info4
-  info5: 'info5', // info5
-  info6: 'info6', // info6
-  info7: 'info7', // info7
-  info8: 'info8', // info8
-  info9: 'info9', // info9
-  info10: 'info10', // info10
-  info11: 'info11', // info11
-  info12: 'info12', // info12
-  info13: 'info13', // info13
-  info14: 'info14', // info14
-};
-const globalUrlColumns: { [key: string]: string } = {
-  url: 'URL', // url
-}
+const dir_desktop: string = path.join(dir_home, "Desktop");
 
 /*
  main
@@ -101,12 +48,12 @@ const createWindow = (): void => {
   try {
     // window
     mainWindow = new BrowserWindow({
-      width: 1200, // width
-      height: 1000, // height
+      width: myWindows.WINDOW_WIDTH, // width
+      height: myWindows.WINDOW_HEIGHT, // height
       webPreferences: {
         nodeIntegration: false, // Node.js usable
         contextIsolation: true, // isolate context
-        preload: path.join(__dirname, "preload/preload.js"), // preload
+        preload: path.join(__dirname, "preload.js"), // preload
       },
     });
 
@@ -116,7 +63,7 @@ const createWindow = (): void => {
     mainWindow.loadFile(path.join(__dirname, "../index.html"));
 
     // ready
-    mainWindow.once("ready-to-show", () => {
+    mainWindow.once("ready-to-show", (): void => {
       // dev mode
       //mainWindow.webContents.openDevTools();
     });
@@ -150,18 +97,16 @@ const createWindow = (): void => {
     });
 
   } catch (e: unknown) {
-    // error
-    if (e instanceof Error) {
-      // show error message
-      logger.error(`${e.message})`);
-    }
+    // show error message
+    logger.error(e);
   }
 };
+
 // enable sandbox
 app.enableSandbox();
 
 // avoid double boot of main process
-const gotTheLock = app.requestSingleInstanceLock();
+const gotTheLock: boolean = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   logger.error("main process duplicated. exit.");
   app.quit();
@@ -274,11 +219,8 @@ ipcMain.on("page", async (_, arg) => {
     await mainWindow.loadFile(path.join(__dirname, url));
 
   } catch (e: unknown) {
-    // error
-    if (e instanceof Error) {
-      // show error message
-      logger.error(e.message);
-    }
+    // show error message
+    logger.error(e);
   }
 });
 
@@ -287,16 +229,13 @@ ipcMain.on("csv", async (event, _) => {
   try {
     logger.info("ipc: csv mode");
     // get CSV data
-    const result: any = await csvMaker.getCsvDataDialog();
+    const result: any = await csvMaker.showCSVDialog(mainWindow);
     // return csv data
     event.sender.send("shopinfoCsvlist", result);
 
   } catch (e: unknown) {
-    // error
-    if (e instanceof Error) {
-      // show error message
-      logger.error(e.message);
-    }
+    // show error message
+    logger.error(e);
   }
 });
 
@@ -422,12 +361,12 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
         // patternize
         for (let i = 2; i < 8; i++) {
           // selector
-          const AndBarTestSelector: string = `#root > div.css-sbhcw1 > section.css-3m41uf > div.css-a5gbi7 > div.css-mlbouc > div:nth-child(${i}) > div > div > section:nth-child(1) > div > p:nth-child(1)`;
+          const AndBarTestSelector: string = `${mySelector.AndBarTestSelector} > div:nth-child(${i}) > div > div > section:nth-child(1) > div > p:nth-child(1)`;
           // selector exists
           if (await puppScraper.doCheckSelector(AndBarTestSelector)) {
             // set index
             selectorVariable = i;
-            logger.trace(`variable is ${i}`);
+            logger.silly(`variable is ${i}`);
             break;
           }
         }
@@ -442,7 +381,7 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
         // business time 
         if (tmpValues.indexOf("営業時間") != -1) {
           BusinessTimeFlg = true;
-          logger.trace("businesstime exists");
+          logger.debug("businesstime exists");
         }
         // shop name selector
         AndBarShopnameSelector = `#root > div.css-sbhcw1 > section.css-3m41uf > div.css-a5gbi7 > div.css-mtkwgb > div > div > div > div > div > p.css-3gxuzy`;
@@ -561,7 +500,7 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
             let tmpResult: string = "";
             // wait for 0.2s
             await puppScraper.doWaitFor(200);
-            logger.debug("app: scraping information");
+            logger.silly("app: scraping information");
             // get result
             const result: any = await doScrape(AndBarSelectors[key]);
 
@@ -580,11 +519,8 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
             }
 
           } catch (error: unknown) {
-            // error
-            if (error instanceof Error) {
-              // show error message
-              logger.error(error.message);
-            }
+            // show error message
+            logger.error(error);
           }
         }
         // increment success counter
@@ -601,13 +537,10 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
         }
 
       } catch (err: unknown) {
-        // error
-        if (err instanceof Error) {
-          // show error message
-          logger.error(err.message);
-          // increment fail counter
-          failCounter++;
-        }
+        // show error message
+        logger.error(err);
+        // increment fail counter
+        failCounter++;
 
       } finally {
         // update status
@@ -625,7 +558,7 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
       .replace(/[^\d]/g, "")
       .slice(0, 14)}.csv`;
     // write to file
-    await csvMaker.makeCsvData(finalResultArray, globalColumns, nowtime);
+    await csvMaker.makeCsvData(finalResultArray, myColumn.columns, nowtime);
     logger.debug("CSV writing finished");
     // close scraper
     await puppScraper.doClose();
@@ -633,11 +566,8 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
     dialogMaker.showmessage("info", "scraping finished.");
 
   } catch (e: unknown) {
-    // error
-    if (e instanceof Error) {
-      // show error message
-      logger.error(e.message);
-    }
+    // show error message
+    logger.error(e);
   }
 });
 
@@ -660,7 +590,7 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
     // init scraper
     await puppScraper.init();
     // target URL
-    const targetURL: string = ANDBAR_FIXED_URL + String(arg);
+    const targetURL: string = myConst.PEPPER_BASE + String(arg);
     // goto top
     await puppScraper.doGo(targetURL);
     logger.debug(`app: scraping ${targetURL}`);
@@ -720,13 +650,10 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
         }
 
       } catch (err) {
-        // error
-        if (err instanceof Error) {
-          // show error message
-          logger.error(err.message);
-          // increment fail counter
-          failCounter++;
-        }
+        // show error message
+        logger.error(err);
+        // increment fail counter
+        failCounter++;
 
       } finally {
         // update success
@@ -748,11 +675,8 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
     dialogMaker.showmessage("info", "finished scraping url.");
 
   } catch (e: unknown) {
-    // error
-    if (e instanceof Error) {
-      // show error message
-      logger.error(e.message);
-    }
+    // show error message
+    logger.error(e);
     // error
     throw new Error("error");
   }
@@ -809,11 +733,8 @@ ipcMain.on("pause", async (_: any, arg: any) => {
     }
 
   } catch (e: unknown) {
-    // error
-    if (e instanceof Error) {
-      // show error message
-      logger.error(e.message);
-    }
+    // show error message
+    logger.error(e);
   }
 });
 
@@ -825,11 +746,8 @@ ipcMain.on("exit", async () => {
     exitApp();
 
   } catch (e: unknown) {
-    // error
-    if (e instanceof Error) {
-      // show error message
-      logger.error(e.message);
-    }
+    // show error message
+    logger.error(e);
   }
 });
 
@@ -856,11 +774,8 @@ const doScrape = async (selector: string): Promise<any> => {
       }
 
     } catch (e) {
-      // error
-      if (e instanceof Error) {
-        // show error message
-        logger.error(e.message);
-      }
+      // show error message
+      logger.error(e);
       // return blank
       resolve("");
     }
@@ -896,11 +811,8 @@ const doScrapeUrl = async (num: number): Promise<any> => {
       }
 
     } catch (e: unknown) {
-      // error
-      if (e instanceof Error) {
-        // show error message
-        logger.error(e.message);
-      }
+      // show error message
+      logger.error(e);
       // reject
       reject('error');
     }
@@ -913,7 +825,6 @@ const exitApp = (): void => {
     logger.info("ipc: exit mode");
     // show question dialog
     const selected: number = dialogMaker.showQuetion('Q', 'exit', 'app will exist ok？ scraped data will be trashed.');
-
     // yes
     if (selected == 0) {
       // quit app
@@ -921,10 +832,7 @@ const exitApp = (): void => {
     }
 
   } catch (e: unknown) {
-    // error
-    if (e instanceof Error) {
-      // show error message
-      logger.error(e.message);
-    }
+    // show error message
+    logger.error(e);
   }
 };
