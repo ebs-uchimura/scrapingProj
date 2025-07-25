@@ -5,15 +5,15 @@
  **/
 
 // namespace
-import { myConst, myCategories, myProperties, myWindows, mySelector, myArrays } from "./consts/globalvariables";
+import { myConst, myCategories, myProperties, myWindows, mySelector, myArrays } from './consts/globalvariables';
 
 // import modules
-import { BrowserWindow, app, ipcMain, Tray, Menu, nativeImage } from "electron"; // electron
-import * as path from "node:path"; // path
-import { Scrape } from "./class/ElScrapeCore0715"; // scraper
-import Dialog from "./class/ElDialog0414"; // dilog
-import Logger from "./class/ElLogger"; // logger
-import CSV from "./class/ElCsv0414"; // csv
+import { BrowserWindow, app, ipcMain, Tray, Menu, nativeImage } from 'electron'; // electron
+import * as path from 'node:path'; // path
+import { Scrape } from './class/ElScrapeCore0719'; // scraper
+import Dialog from './class/ElDialog0721'; // dilog
+import Logger from './class/ElLogger'; // logger
+import CSV from './class/ElCsv0414'; // csv
 import MKDir from './class/ElMkdir0414'; // mkdir
 
 // loggeer instance
@@ -29,8 +29,8 @@ const mkdirManager = new MKDir(logger);
 
 // desktop path
 const dir_home: string =
-  process.env[process.platform == "win32" ? "USERPROFILE" : "HOME"] ?? "";
-const dir_desktop: string = path.join(dir_home, "Desktop");
+  process.env[process.platform == 'win32' ? 'USERPROFILE' : 'HOME'] ?? '';
+const dir_desktop: string = path.join(dir_home, 'Desktop');
 
 /*
  main
@@ -43,8 +43,6 @@ let isQuiting: boolean;
 let finalCsvArray: any = [];
 // final Result Array
 let finalResultArray: any = [];
-// pref counter
-let prefUrlSuccessCounter: number = 0;
 
 // create window
 const createWindow = (): void => {
@@ -56,28 +54,28 @@ const createWindow = (): void => {
       webPreferences: {
         nodeIntegration: false, // Node.js usable
         contextIsolation: true, // isolate context
-        preload: path.join(__dirname, "preload.js"), // preload
+        preload: path.join(__dirname, 'preload.js'), // preload
       },
     });
 
     // hide menu bar
     mainWindow.setMenuBarVisibility(false);
     // load index.html
-    mainWindow.loadFile(path.join(__dirname, "../index.html"));
+    mainWindow.loadFile(path.join(__dirname, '..', 'www', 'index.html'));
     // ready
-    mainWindow.once("ready-to-show", () => {
+    mainWindow.once('ready-to-show', () => {
       if (!app.isPackaged) {
         // dev mode
-        // mainWindow.webContents.openDevTools();
+        //mainWindow.webContents.openDevTools();
       }
     });
 
     // close
-    mainWindow.on("close", (event: any): void => {
+    mainWindow.on('close', (event: any): void => {
       // quiting
       if (!isQuiting) {
         // except for apple
-        if (process.platform !== "darwin") {
+        if (process.platform !== 'darwin') {
           // false
           event.returnValue = false;
         }
@@ -85,17 +83,18 @@ const createWindow = (): void => {
     });
 
     // closed
-    mainWindow.on("closed", (): void => {
+    mainWindow.on('closed', (): void => {
       // destroy window
       mainWindow.destroy();
     });
+
   } catch (e: unknown) {
     // show error message
     logger.error(e);
     // error
     if (e instanceof Error) {
       // show error
-      dialogMaker.showmessage("error", `${e.message}`);
+      dialogMaker.showmessage('error', `${e.message}`);
     }
   }
 };
@@ -104,15 +103,15 @@ const createWindow = (): void => {
 app.enableSandbox();
 
 // ready
-app.on("ready", async () => {
-  logger.info("app: electron is ready");
+app.on('ready', async () => {
+  logger.info('app: electron is ready');
   // create window
   createWindow();
   // make dir
   await mkdirManager.mkDir('csv');
   // icon
   const icon: Electron.NativeImage = nativeImage.createFromPath(
-    path.join(__dirname, "../assets/gourmet.ico")
+    path.join(__dirname, '../assets/gourmet.ico')
   );
   // tray
   const mainTray: Electron.Tray = new Tray(icon);
@@ -120,14 +119,14 @@ app.on("ready", async () => {
   const contextMenu: Electron.Menu = Menu.buildFromTemplate([
     // show
     {
-      label: "show",
+      label: 'show',
       click: () => {
         mainWindow.show();
       },
     },
     // close
     {
-      label: "close",
+      label: 'close',
       click: () => {
         app.quit();
       },
@@ -136,11 +135,11 @@ app.on("ready", async () => {
   // set context menu
   mainTray.setContextMenu(contextMenu);
   // doubleclick
-  mainTray.on("double-click", () => mainWindow.show());
+  mainTray.on('double-click', () => mainWindow.show());
 });
 
 // activate
-app.on("activate", () => {
+app.on('activate', () => {
   // no window
   if (BrowserWindow.getAllWindows().length === 0) {
     // reboot
@@ -149,15 +148,15 @@ app.on("activate", () => {
 });
 
 // close
-app.on("before-quit", () => {
-  logger.info("ipc: quit mode");
+app.on('before-quit', () => {
+  logger.info('ipc: quit mode');
   // close flg
   isQuiting = true;
 });
 
 // exit
-app.on("window-all-closed", () => {
-  logger.info("app: close app");
+app.on('window-all-closed', () => {
+  logger.info('app: close app');
   // exit app
   app.quit();
 });
@@ -166,50 +165,50 @@ app.on("window-all-closed", () => {
  IPC
 */
 /* page */
-ipcMain.on("page", async (_: any, arg: any) => {
+ipcMain.on('page', async (_: any, arg: any) => {
   try {
-    logger.info("ipc: page mode");
+    logger.info('ipc: page mode');
     // target url
     let url: string = '';
 
     // switch on mode
     switch (arg) {
       // exit_page
-      case "exit_page":
+      case 'exit_page':
         // except for apple
-        if (process.platform !== "darwin") {
+        if (process.platform !== 'darwin') {
           // quit app
           app.quit();
           return false;
         }
         // clear url
-        url = "";
+        url = '';
         break;
 
       // top page
-      case "top_page":
+      case 'top_page':
         // set url
-        url = "../index.html";
+        url = 'index.html';
         break;
 
       // url page
-      case "url_page":
+      case 'url_page':
         // set url
-        url = "../url.html";
+        url = 'url.html';
         break;
 
       // shop page
-      case "shop_page":
+      case 'shop_page':
         // set url
-        url = "../shop.html";
+        url = 'shop.html';
         break;
 
       default:
         // clear url
-        url = "";
+        url = '';
     }
     // transfer
-    await mainWindow.loadFile(path.join(__dirname, url));
+    await mainWindow.loadFile(path.join(__dirname, '..', 'www', url));
 
   } catch (e: unknown) {
     // show error message
@@ -217,21 +216,21 @@ ipcMain.on("page", async (_: any, arg: any) => {
     // error
     if (e instanceof Error) {
       // show error
-      dialogMaker.showmessage("error", `${e.message}`);
+      dialogMaker.showmessage('error', `${e.message}`);
     }
   }
 });
 
 // CSV
-ipcMain.on("csv", async (event: any, _: any) => {
+ipcMain.on('csv', async (event: any, _: any) => {
   try {
-    logger.info("ipc: csv mode");
+    logger.info('ipc: csv mode');
     // csv path
     const csvPath: any = await csvMaker.showCSVDialog(mainWindow);
     // get CSV data
     const result: any = await csvMaker.getCsvData(csvPath);
     // return csv data
-    event.sender.send("shopinfoCsvlist", result);
+    event.sender.send('shopinfoCsvlist', result);
 
   } catch (e: unknown) {
     // show error message
@@ -239,17 +238,17 @@ ipcMain.on("csv", async (event: any, _: any) => {
     // error
     if (e instanceof Error) {
       // show error
-      dialogMaker.showmessage("error", `${e.message}`);
+      dialogMaker.showmessage('error', `${e.message}`);
     }
   }
 });
 
 // error
-ipcMain.on("error", async (_: any, arg: any) => {
+ipcMain.on('error', async (_: any, arg: any) => {
   try {
-    logger.info("ipc: error mode");
+    logger.info('ipc: error mode');
     // show error
-    dialogMaker.showmessage("error", arg);
+    dialogMaker.showmessage('error', arg);
 
   } catch (e: unknown) {
     // show error message
@@ -257,7 +256,7 @@ ipcMain.on("error", async (_: any, arg: any) => {
     // error
     if (e instanceof Error) {
       // show error
-      dialogMaker.showmessage("error", `${e.message}`);
+      dialogMaker.showmessage('error', `${e.message}`);
     }
   } finally {
     // close window
@@ -266,13 +265,15 @@ ipcMain.on("error", async (_: any, arg: any) => {
 });
 
 // scrape
-ipcMain.on("scrape", async (event: any, arg: any) => {
+ipcMain.on('scrape', async (event: any, arg: any) => {
   try {
-    logger.info("ipc: scrape mode");
+    logger.info('ipc: scrape mode');
     // shop success counter
     let shopSuccessCounter: number = 0;
     // shop fail counter
     let shopFailCounter: number = 0;
+    // final Result Array
+    finalResultArray = [];
     // total counter
     let totalCounter: number = arg.record.length;
     // error array
@@ -282,27 +283,27 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
     // initialize scraper
     await puppScraper.init();
     // update total
-    event.sender.send("total", totalCounter);
+    event.sender.send('shoptotal', totalCounter);
 
     // scrape pages
     for (let url of arg.record) {
       try {
         // shop data
         let myShopObj: any = {
-          shopname: "", // shopname
-          station: "", // status
-          shopname2: "", // shopname2
-          genre: "", // genre
-          telephone: "", // telephone
-          reservable: "", // reservable
-          address1: "", // address1
-          address2: "", // address2
-          address3: "", // address3
-          businesstime: "", // businesstime
-          seat: "", // seat
-          homepage: "", // homepage
-          shopphone: "", // shopphone
-          shopphone2: "", // shopphone2
+          shopname: '', // shopname
+          station: '', // status
+          shopname2: '', // shopname2
+          genre: '', // genre
+          telephone: '', // telephone
+          reservable: '', // reservable
+          address1: '', // address1
+          address2: '', // address2
+          address3: '', // address3
+          businesstime: '', // businesstime
+          seat: '', // seat
+          homepage: '', // homepage
+          shopphone: '', // shopphone
+          shopphone2: '', // shopphone2
         };
         // goto top
         await puppScraper.doGo(url[0]);
@@ -310,7 +311,7 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
         await puppScraper.doWaitFor(2 * myProperties.WAIT_SECOND);
         logger.debug(`app: scraping ${url[0]}`);
         // update target url
-        event.sender.send("statusUpdate", url[0]);
+        event.sender.send('statusUpdate', url[0]);
         // shopname
         const shopname: string = await doScrape(mySelector.tabeLogMainShopnameSelector);
         const checkedShopName: string = checkEvaluation(shopname);
@@ -377,21 +378,21 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
         logger.error(err);
       } finally {
         // send success counter
-        event.sender.send("success", shopSuccessCounter);
+        event.sender.send('shopsuccess', shopSuccessCounter);
         // send fail counter
-        event.sender.send("fail", shopFailCounter);
+        event.sender.send('shopfail', shopFailCounter);
       }
     }
     // CSV file name
     const nowtime: string = `${dir_desktop}\\${new Date()
       .toISOString()
-      .replace(/[^\d]/g, "")
+      .replace(/[^\d]/g, '')
       .slice(0, 14)}.csv`;
     // make csv
     csvMaker.makeCsvData(finalResultArray, myArrays.columns, nowtime);
-    logger.debug("CSV writing finished");
+    logger.debug('CSV writing finished');
     // show finished message
-    dialogMaker.showmessage("info", "scraping finished");
+    dialogMaker.showmessage('info', 'scraping finished');
 
   } catch (e: unknown) {
     // error
@@ -399,25 +400,25 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
     // error
     if (e instanceof Error) {
       // show error
-      dialogMaker.showmessage("error", `${e.message}`);
+      dialogMaker.showmessage('error', `${e.message}`);
     }
   } finally {
   }
 });
 
 // scrape url
-ipcMain.on("scrapeurl", async (event: any, arg: any) => {
+ipcMain.on('scrapeurl', async (event: any, arg: any) => {
   try {
-    logger.info("ipc: scrape mode");
+    logger.info('ipc: scrape mode');
+    // init counter
+    let urlSuccessCounter: number = 0;
+    // final Csv Array
+    finalCsvArray = [];
     // pref index
     const prefindex: number = Number(arg.index);
     // pref
     const pref: string = String(arg.pref);
-    // start area index
-    const startAreaindex: number = Number(arg.area) + 1;
-    // start city index
-    const startCityindex: number = Number(arg.city) + 1;
-    logger.debug("scrapeurl: db insert finished");
+    logger.debug('scrapeurl: db insert finished');
     // pref padded
     const prefPadded: string = String(prefindex).padStart(2, '0');
     logger.debug(`scrapeurl: ${myConst.TABELOG_BASE}${pref}/`);
@@ -426,32 +427,27 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
     // goto top
     await puppScraper.doGo(`${myConst.TABELOG_BASE}${pref}/`);
     logger.debug(`scrapeurl: scraping area: ${myConst.TABELOG_BASE}${pref}/`);
+    // wait for datalist
+    await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
     // url exists
     if (!await puppScraper.doCheckSelector(mySelector.tabeLogTotalSelector)) {
       throw new Error('scrapeurl: scrape area: no key data');
     }
-    logger.debug("scrapeurl: url exists");
-    // wait for datalist
-    await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
+    logger.debug('scrapeurl: url exists');
     // total tag
     const tmpPreftotal: any = await puppScraper.doMultiEval(
       mySelector.tabeLogTotalSelector,
-      "innerHTML"
+      'innerHTML'
     );
     // tag removal
     const tmpPrefTotalNum: string = tmpPreftotal[0].replace(/<[^>]*>/g, '');
     // totalCounter
     const totalPrefCounter: number = Number(tmpPrefTotalNum);
     // pref total
-    event.sender.send("preftotal", totalPrefCounter);
+    event.sender.send('urltotal', totalPrefCounter);
     logger.debug(`scrapeurl: prefecture total is ${totalPrefCounter} urls`);
-
-    // over limit
-    if (totalPrefCounter <= myProperties.PAGE_LIMIT) {
-      throw new Error('scrapeurl: over total');
-    }
     // numbers for loop
-    const areaNumberArray: number[] = makeNumberRange(startAreaindex, 31);
+    const areaNumberArray: number[] = makeNumberRange(1, 31);
 
     // area loop
     for (let areaNum of areaNumberArray) {
@@ -460,8 +456,9 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
         const zeroPadded: string = String(areaNum).padStart(2, '0');
         // area url
         const areaUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/`;
+        console.log(`areaUrl: ${areaUrl}`);
         // update target url
-        event.sender.send("statusUpdate", areaUrl);
+        event.sender.send('statusUpdate', areaUrl);
         // goto top
         await puppScraper.doGo(areaUrl);
         logger.debug(`scrapeurl: ${areaUrl}`);
@@ -475,7 +472,7 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
         // total
         const tmpAreaTotal: any = await puppScraper.doMultiEval(
           mySelector.tabeLogTotalSelector,
-          "innerHTML"
+          'innerHTML'
         );
         // total number
         const tmpAreaTotalNum: string = tmpAreaTotal[0].replace(/<[^>]*>/g, '');
@@ -483,10 +480,9 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
         const totalAreaCounter: number = Number(tmpAreaTotalNum);
         logger.debug(`scrapeurl: area total is ${totalAreaCounter}`);
 
-        // over limit
+        // under limit
         if (totalAreaCounter <= myProperties.PAGE_LIMIT) {
           logger.debug(`scrapeurl: total is ${totalAreaCounter}`);
-
           // page counter
           const areaPageCounter: number = Math.ceil(totalAreaCounter / 20);
           // final url
@@ -494,12 +490,15 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
           logger.debug('scrapeurl: ');
           // push into array
           finalCsvArray.push(finalAreaUrl);
+          // countup
+          urlSuccessCounter += totalAreaCounter;
+          // send success counter
+          event.sender.send("urlsuccess", urlSuccessCounter);
           continue;
         }
-        logger.debug('scrapeurl: area total exceed 1200');
-
+        logger.debug(`scrapeurl: area total exceed ${myProperties.PAGE_LIMIT}`);
         // numbers for loop
-        const cityNumberArray: number[] = makeNumberRange(startCityindex, 60);
+        const cityNumberArray: number[] = makeNumberRange(1, 60);
 
         // city loop
         for (let cityNum of cityNumberArray) {
@@ -508,8 +507,9 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
             const cityPadded: string = String(cityNum).padStart(2, '0');
             // city url
             const cityUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/`;
+            console.log(`cityUrl: ${cityUrl}`);
             // update target url
-            event.sender.send("statusUpdate", cityUrl);
+            event.sender.send('statusUpdate', cityUrl);
             // goto top
             await puppScraper.doGo(cityUrl);
             logger.debug(`scrapeurl: ${cityUrl}`);
@@ -523,7 +523,7 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
             // total
             const tmpCityTotal: any = await puppScraper.doMultiEval(
               mySelector.tabeLogTotalSelector,
-              "innerHTML"
+              'innerHTML'
             );
             // total number
             const tmpCityTotalNum: string = tmpCityTotal[0].replace(/<[^>]*>/g, '');
@@ -532,8 +532,7 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
             logger.debug(`scrapeurl: city total is ${totalCityCounter}`);
             // page counter
             const cityPageCounter: number = Math.ceil(totalCityCounter / 20);
-
-            // over 1200
+            // under limit
             if (totalCityCounter <= myProperties.PAGE_LIMIT) {
               logger.debug(`scrapeurl: total is ${totalCityCounter}`);
               // final url
@@ -541,17 +540,23 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
               logger.debug('scrapeurl result: ');
               // push into array
               finalCsvArray.push(finalCityUrl);
+              console.log(`city: ${finalCityUrl}`);
+              // countup
+              urlSuccessCounter += totalCityCounter;
+              // send success counter
+              event.sender.send("urlsuccess", urlSuccessCounter);
               continue;
             }
-            logger.debug('scrapeurl: city total exceed 1200');
+            logger.debug(`scrapeurl: city total exceed ${myProperties.PAGE_LIMIT}`);
 
             // category loop
-            for (let i = 0; i < myCategories.GENRES.length; i++) {
+            for (let i = 0; i < myCategories.CATEGORIES.length; i++) {
               try {
-                // city url
-                const categoryUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${myCategories.GENRES[i]}`;
+                // category url
+                const categoryUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${myCategories.CATEGORIES[i]}`;
                 // update target url
-                event.sender.send("statusUpdate", categoryUrl);
+                event.sender.send('statusUpdate', categoryUrl);
+                console.log(`categoryUrl: ${categoryUrl}`);
                 // goto top
                 await puppScraper.doGo(categoryUrl);
                 logger.debug(`scrapeurl: category: ${categoryUrl}`);
@@ -566,7 +571,7 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
                 // total
                 const tmpCategoryTotal: any = await puppScraper.doMultiEval(
                   mySelector.tabeLogGenreTotalSelector,
-                  "innerHTML",
+                  'innerHTML',
                 );
                 // total number
                 const tmpCategoriesTotalNum: string = tmpCategoryTotal[0].replace(/<[^>]*>/g, '');
@@ -574,15 +579,75 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
                 const totalCategoriesCounter: number = Number(tmpCategoriesTotalNum);
                 // page counter
                 const categoryPageCounter: number = Math.ceil(totalCategoriesCounter / 20);
-                // final category url
-                const finalCategoryUrl: any = await doScrapeUrl(categoryUrl, mySelector.tabeLogCategoryUrlSelector, 'category', categoryPageCounter, event);
-                // set to csv array
-                finalCsvArray.push(finalCategoryUrl);
+                // under limit 
+                if (totalCategoriesCounter <= myProperties.PAGE_LIMIT) {
+                  // final category url
+                  const finalCategoryUrl: any = await doScrapeUrl(categoryUrl, mySelector.tabeLogCategoryUrlSelector, 'category', categoryPageCounter, event);
+                  // set to csv array
+                  finalCsvArray.push(finalCategoryUrl);
+                  console.log(`category: ${finalCategoryUrl}`);
+                  // countup
+                  urlSuccessCounter += totalCategoriesCounter;
+                  // send success counter
+                  event.sender.send("urlsuccess", urlSuccessCounter);
+                  continue;
+                }
+                logger.debug('scrapeurl: category total exceed 1200');
+
+                // genre loop
+                for (let j = 0; j < myCategories.GENRES.length; j++) {
+                  try {
+                    // genre url
+                    const genreUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${myCategories.GENRES[j]}`;
+                    // update target url
+                    event.sender.send('statusUpdate', genreUrl);
+                    console.log(`genreurl: ${genreUrl}`);
+                    // goto top
+                    await puppScraper.doGo(genreUrl);
+                    logger.debug(`scrapeurl: genre: ${genreUrl}`);
+                    // wait for datalist
+                    await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
+                    // url exists
+                    if (!await puppScraper.doCheckSelector(mySelector.tabeLogGenreTotalSelector)) {
+                      logger.debug('scrapeurl: no genre selector');
+                      continue;
+                    }
+                    logger.debug(`scrapeurl: genre get total started`);
+                    // total
+                    const tmpGenreTotal: any = await puppScraper.doMultiEval(
+                      mySelector.tabeLogGenreTotalSelector,
+                      'innerHTML',
+                    );
+                    // total number
+                    const tmpGenreTotalNum: string = tmpGenreTotal[0].replace(/<[^>]*>/g, '');
+                    // totalCounter
+                    const totalGenreCounter: number = Number(tmpGenreTotalNum);
+                    // page counter
+                    const genrePageCounter: number = Math.ceil(totalGenreCounter / 20);
+                    // under limit 
+                    if (totalGenreCounter <= myProperties.PAGE_LIMIT) {
+                      // final genre url
+                      const finalGenreUrl: any = await doScrapeUrl(genreUrl, mySelector.tabeLogCategoryUrlSelector, 'genre', genrePageCounter, event);
+                      // set to csv array
+                      finalCsvArray.push(finalGenreUrl);
+                      console.log(`genre: ${finalGenreUrl}`);
+                      // countup
+                      urlSuccessCounter += totalGenreCounter;
+                      // send success counter
+                      event.sender.send("urlsuccess", urlSuccessCounter);
+                    } else {
+                      throw new Error('scrapeurl: genre total exceed 1200');
+                    }
+
+                  } catch (e: unknown) {
+                    // error
+                    logger.error(e);
+                  }
+                }
 
               } catch (e: unknown) {
                 // error
                 logger.error(e);
-                continue;
               }
             }
           } catch (e: unknown) {
@@ -596,17 +661,14 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
       }
     }
     // nowtime
-    const nowtime: string = `${dir_desktop}\\${new Date()
-      .toISOString()
-      .replace(/[^\d]/g, "")
-      .slice(0, 14)}`;
+    const nowtime: string = `${dir_desktop}\\${new Date().toISOString().replace(/[^\d]/g, '').slice(0, 14)}`;
     // file name
     const targetpath: string = `${nowtime}_${pref}_url.csv`;
     logger.debug('scrapeurl: making csv...');
     // make CSV
     await csvMaker.makeCsvData(finalCsvArray.flat().flat(), ['url'], targetpath);
     // show error
-    dialogMaker.showmessage("finished", "URL取得が終わりました");
+    dialogMaker.showmessage('finished', 'URL取得が終わりました');
 
   } catch (e: unknown) {
     // error
@@ -614,15 +676,15 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
     // error
     if (e instanceof Error) {
       // show error
-      dialogMaker.showmessage("error", `${e.message}`);
+      dialogMaker.showmessage('error', `${e.message}`);
     }
   }
 });
 
 // exit
-ipcMain.on("exit", async () => {
+ipcMain.on('exit', async () => {
   try {
-    logger.info("ipc: exit mode");
+    logger.info('ipc: exit mode');
     // quit app
     app.quit();
 
@@ -632,7 +694,7 @@ ipcMain.on("exit", async () => {
     // error
     if (e instanceof Error) {
       // show error
-      dialogMaker.showmessage("error", `${e.message}`);
+      dialogMaker.showmessage('error', `${e.message}`);
     }
   } finally {
     // goto top
@@ -649,7 +711,7 @@ const doScrape = async (selector: string): Promise<string> => {
         // url
         const tmpValues: any = await puppScraper.doSingleEval(
           selector,
-          "innerHTML"
+          'innerHTML'
         );
         // empty
         if (tmpValues == '') {
@@ -660,7 +722,7 @@ const doScrape = async (selector: string): Promise<string> => {
         }
       } else {
         // ignore error
-        resolve("");
+        resolve('');
       }
     } catch (e: unknown) {
       // error
@@ -668,10 +730,10 @@ const doScrape = async (selector: string): Promise<string> => {
       // error
       if (e instanceof Error) {
         // show error
-        dialogMaker.showmessage("error", `${e.message}`);
+        dialogMaker.showmessage('error', `${e.message}`);
       }
       // ignore error
-      resolve("");
+      resolve('');
     }
   });
 };
@@ -690,14 +752,15 @@ const doScrapeUrl = async (url: string, selector: string, mode: string, limit: n
           logger.debug(`${mode}: ${index}`);
           // goto page
           await puppScraper.doGo(url);
-          // wait for 2 sec
-          await puppScraper.doWaitFor(2 * myProperties.WAIT_SECOND);
+          // wait for 1 sec
+          await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
           // url exists
           if (await puppScraper.doCheckSelector(selector)) {
-            // wait for datalist
-            await puppScraper.doWaitFor(2 * myProperties.WAIT_SECOND);
+            // wait for 1 sec
+            await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
             // url
-            const tmpUrls: any = await puppScraper.doMultiEval(selector, "href");
+            const tmpUrls: any = await puppScraper.doMultiEval(selector, 'href');
+            console.log(tmpUrls);
             // make url obj
             const tmpUrlObj: any = tmpUrls.map((url: any) => {
               return {
@@ -709,8 +772,6 @@ const doScrapeUrl = async (url: string, selector: string, mode: string, limit: n
 
           } else {
             logger.debug('scrapeurl: no selector');
-            // result
-            continue;
           }
 
         } catch (e: unknown) {
@@ -719,12 +780,6 @@ const doScrapeUrl = async (url: string, selector: string, mode: string, limit: n
           logger.debug('scrapeurl: no selector');
           // result
           resolve(finalArray);
-
-        } finally {
-          // count up
-          prefUrlSuccessCounter += 20;
-          // update success
-          event.sender.send('prefsuccess', prefUrlSuccessCounter);
         }
       }
       logger.debug('scrapeurl: scrape url end');
@@ -737,7 +792,7 @@ const doScrapeUrl = async (url: string, selector: string, mode: string, limit: n
       // error
       if (e instanceof Error) {
         // show error
-        dialogMaker.showmessage("error", `${e.message}`);
+        dialogMaker.showmessage('error', `${e.message}`);
       }
     }
   });
@@ -749,7 +804,7 @@ const makeNumberRange: any = (start: number, end: number) => [...new Array(end -
 // empty evaluation
 const checkEvaluation = (value: string): any => {
   // tag regexp
-  const regex: RegExp = new RegExp("(<([^>]+)>)", "gi");
+  const regex: RegExp = new RegExp('(<([^>]+)>)', 'gi');
   // isEmpty
   const isEmpty: boolean = Object.keys(value).length === 0 && value.constructor === Object;
   // empty
@@ -757,7 +812,7 @@ const checkEvaluation = (value: string): any => {
     // tag exists
     if (regex.test(value)) {
       // tag removal
-      return value.replace(/(<([^>]+)>)/gi, "");
+      return value.replace(/(<([^>]+)>)/gi, '');
     } else {
       // tag 
       return value;

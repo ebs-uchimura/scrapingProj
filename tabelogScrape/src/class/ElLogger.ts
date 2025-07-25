@@ -51,6 +51,16 @@ class ELLogger {
     logger.info(message);
   };
 
+  // verbose
+  verbose = (message: string) => {
+    logger.verbose(message);
+  };
+
+  // silly
+  silly = (message: string) => {
+    logger.silly(message);
+  };
+
   // empty or not
   error = (e: unknown) => {
     if (e instanceof Error) {

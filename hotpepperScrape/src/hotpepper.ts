@@ -60,7 +60,7 @@ const createWindow = (): void => {
     mainWindow.once("ready-to-show", () => {
       if (!app.isPackaged) {
         // dev mode
-        // mainWindow.webContents.openDevTools();
+        //mainWindow.webContents.openDevTools();
       }
     });
 

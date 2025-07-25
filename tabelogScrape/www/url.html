@@ -6,6 +6,7 @@
   <title>食べログスクレイピングツール</title>
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
   <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/button.css">
 </head>
 
 <body>
@@ -65,23 +66,13 @@
           <option value="okinawa">沖縄県</option>
         </select>
       </div>
-      <div class="input_area">
-        開始エリア番号:
-        <input type="number" id="startarea" name="startarea" min="1" max="31" />
-      </div>
-      <div class="input_area">
-        開始都市番号:
-        <input type="number" id="startcity" name="startcity" min="1" max="31" />
-      </div>
       <div class="button_area">
-        <button class="button-g button-2 button-wide" onclick="gotoScrape();">開始</button>
+        <button class="button-g button-4 button-wide" onclick="gotoScrape();">開始</button>
       </div>
     </div>
     <div class="progress_area">
-      <div>
-        都道府県合計数:
-        <span id="pref"></span>/<span id="preftotal"></span>
-      </div>
+      <div>成功:<span id="success"></span>/<span id="successtotal"></span></div>
+      <div>失敗:<span id="fail"></span>/<span id="failtotal"></span></div>
     </div>
     <div class="operation_area">
       <h3>ステータス</h3>
@@ -91,9 +82,7 @@
       <button type="button" id="topbutton" class="button-g button-6 button-wide" role="button"
         onclick="transfer('top_page');">トップへ戻る</button>
     </div>
-    <div class="operation_area">
-      <button class="button-g button-1 button-wide" value="exit" onclick="exitApp();">終了</button>
-    </div>
+    <button class="button-g button-1 button-wide" value="exit" onclick="exitApp();">終了
   </div>
   <footer>
     <p>
@@ -105,14 +94,14 @@
     /// dom
     // status
     const scrapingstatusDom = document.getElementById('scrapingstatus');
-    // preftotal
-    const preftotalDom = document.getElementById('preftotal');
-    // pref
-    const prefDom = document.getElementById('pref');
-    // startarea
-    const startAreaDom = document.getElementById('startarea');
-     // startcity
-    const startCityDom = document.getElementById('startcity');
+    // successtotal
+    const successtotalDom = document.getElementById('successtotal');
+    // success
+    const successDom = document.getElementById('success');
+    // failtotal
+    const failtotalDom = document.getElementById('failtotal');
+    // fail
+    const failDom = document.getElementById('fail');
 
     // pref total
     window.api.on('console', arg => {
@@ -120,20 +109,30 @@
       console.log(arg);
     });
 
-    // pref total
-    window.api.on('preftotal', arg => {
-      // pref total dom
-      preftotalDom.innerHTML = arg;
+    // shop total
+    window.api.on('urltotal', arg => {
+      // shop success total dom
+      successtotalDom.innerHTML = arg;
+      // shop fail total dom
+      failtotalDom.innerHTML = arg;
     });
 
-    // pref success
-    window.api.on('prefsuccess', arg => {
+    // success
+    window.api.on('urlsuccess', arg => {
+      console.log('success: ' + arg);
       // area success dom
-      prefDom.innerHTML = arg;
+      successDom.innerHTML = arg;
+    });
+
+    // fail
+    window.api.on('urlfail', arg => {
+      console.log('fail: ' + arg);
+      // area fail dom
+      failDom.innerHTML = arg;
     });
 
     // status Update
-    window.api.on("statusUpdate", arg => {
+    window.api.on('statusUpdate', arg => {
       try {
         // status Update
         scrapingstatusDom.innerHTML = `
@@ -149,7 +148,7 @@
     const transfer = channel => {
       try {
         // page transfer
-        window.api.send("page", channel);
+        window.api.send('page', channel);
 
       } catch (e) {
         // error
@@ -161,28 +160,21 @@
     const gotoScrape = () => {
       try {
         // initialize form
-        preftotalDom.innerHTML = '';
         scrapingstatusDom.innerHTML = '';
         // select dom
         const select = document.getElementById('prefecture');
-        // startarea no
-        const startareaNo = startAreaDom.value;
-        // startcity no
-        const startcityNo = startCityDom.value;
         // send obj
         const obj = {
           pref: select.value,
           index: select.selectedIndex,
-          area: startareaNo,
-          city: startcityNo,
         }
         // error
         if (select.selectedIndex == 0) {
           // error
-          window.api.send("error", '都道府県が選択されていません');
+          window.api.send('error', '都道府県が選択されていません');
         }
         // start scraping
-        window.api.send("scrapeurl", obj);
+        window.api.send('scrapeurl', obj);
 
       } catch (e) {
         // error
@@ -194,7 +186,7 @@
     const exitApp = () => {
       try {
         // exit App
-        window.api.send("exit");
+        window.api.send('exit');
 
       } catch (e) {
         // error

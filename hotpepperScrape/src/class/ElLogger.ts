@@ -65,7 +65,7 @@ class ELLogger {
   error = (e: unknown) => {
     if (e instanceof Error) {
       // error
-      logger.error(process.pid, e.stack);
+      logger.error(e.stack);
     }
   };
 

@@ -26,34 +26,6 @@ img {
   -webkit-user-drag: none;
 }
 
-.draggable {
-  -webkit-app-region: drag;
-}
-
-.selectable {
-  cursor: auto;
-}
-
-.operation_area {
-  margin: 20px 0;
-  font-size: 0.8rem;
-}
-
-.operation_area div {
-  padding-left: 10px;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-
-.operation_area div input {
-  height: 40px;
-  border: 1px solid #CCC;
-}
-
-.operation_area div input::placeholder {
-  color: #CCC;
-}
-
 /* css */
 body {
   text-align: center;
@@ -80,6 +52,7 @@ p {
 }
 
 footer {
+  margin: 20px 0 0;
   font-size: 0.8rem;
 }
 
@@ -106,27 +79,30 @@ footer {
   width: 100px;
 }
 
+#csvfilepath {
+  font-size: 0.7rem;
+}
+
 .operation_area {
   margin: 0 auto;
   padding: 30px 0;
   text-align: center;
+  font-size: 0.8rem;
 }
 
 .operation_area div {
-  margin: 10px auto;
+  padding-left: 10px;
   font-size: 0.8rem;
   font-weight: bold;
 }
 
-.button-container {
-  margin: 10px 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.operation_area div input {
+  height: 40px;
+  border: 1px solid #CCC;
 }
 
-#csvfilepath {
-  font-size: 0.7rem;
+.operation_area div input::placeholder {
+  color: #CCC;
 }
 
 .progress_area {

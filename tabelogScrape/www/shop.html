@@ -6,6 +6,7 @@
   <title>食べログスクレイピングツール</title>
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
   <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/button.css">
 </head>
 
 <body>
@@ -19,7 +20,7 @@
       </div>
       <div class="operation_area">
         <h3>スクレイピング</h3>
-        <div><button class="button-g button-wide button-2" value="edit" onclick="gotoScrape();">開始</button></div>
+        <div><button class="button-g button-wide button-4" value="edit" onclick="gotoScrape();">開始</button></div>
       </div>
       <div class="progressarea">
         <div>成功:<span id="success"></span>/<span id="successtotal"></span></div>
@@ -30,9 +31,11 @@
         <div id="scrapingstatus"></div>
       </div>
       <div class="operation_area">
-        <div><button type="button" id="topbutton" class="button-6 button-g button-wide" role="button"
-            onclick="transfer('top_page');">トップへ戻る</button></div>
-        <div><button class="button-g button-4 button-wide" value="exit" onclick="exitApp();">終了</button></div>
+        <button type="button" id="topbutton" class="button-6 button-g button-wide" role="button"
+            onclick="transfer('top_page');">トップへ戻る</button>
+      </div>
+      <div>
+        <button class="button-g button-3 button-wide" value="exit" onclick="exitApp();">終了</button>
       </div>
     </div>
   </div>
@@ -57,7 +60,7 @@
     const failtotalDom = document.getElementById('failtotal');
 
     // total counter
-    window.api.on('total', arg => {
+    window.api.on('shoptotal', arg => {
       // success
       successtotalDom.innerHTML = arg;
       // fail
@@ -65,19 +68,21 @@
     });
 
     // success counter
-    window.api.on('success', arg => {
+    window.api.on('shopsuccess', arg => {
+      console.log('success: ' + arg);
       // success
       successDom.innerHTML = arg;
     });
 
     // fail counter
-    window.api.on('fail', arg => {
+    window.api.on('shopfail', arg => {
+      console.log('fail: ' + arg);
       // fail
       failDom.innerHTML = arg;
     });
 
     // shop info
-    window.api.on("shopinfoCsvlist", arg => {
+    window.api.on('shopinfoCsvlist', arg => {
       try {
         // convert to JSON
         const serializedArray = JSON.stringify(arg);
@@ -93,7 +98,7 @@
     });
 
     // status Update
-    window.api.on("statusUpdate", arg => {
+    window.api.on('statusUpdate', arg => {
       try {
         // status Update
         scrapingstatusDom.innerHTML = `
@@ -109,7 +114,7 @@
     const readCSV = () => {
       try {
         // read CSV
-        window.api.send("csv", '');
+        window.api.send('csv', '');
 
       } catch (e) {
         // error
@@ -128,7 +133,7 @@
         // shop ul list
         const serializedArray = JSON.parse(localStorage.getItem('shopinfoArray'));
         // start scraping
-        window.api.send("scrape", serializedArray);
+        window.api.send('scrape', serializedArray);
 
       } catch (e) {
         // error
@@ -140,7 +145,7 @@
     const exitApp = () => {
       try {
         // exit App
-        window.api.send("exit");
+        window.api.send('exit');
 
       } catch (e) {
         // error
@@ -152,7 +157,7 @@
     const transfer = channel => {
       try {
         // page transfer
-        window.api.send("page", channel);
+        window.api.send('page', channel);
 
       } catch (e) {
         // error
