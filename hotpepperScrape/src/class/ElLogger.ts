@@ -9,7 +9,7 @@
 'use strict';
 
 // define modules
-import * as path from 'path'; // path
+import * as path from 'node:path'; // path
 import { app } from 'electron'; // electron
 import logger from 'electron-log'; // Logger
 

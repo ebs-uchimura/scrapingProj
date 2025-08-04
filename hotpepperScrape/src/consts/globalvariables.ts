@@ -11,7 +11,7 @@ export namespace myConst {
   export const COMPANY_NAME: string = 'Ebisudo';
   export const CSV_ENCODING: string = "SJIS";
   export const pepper_BASE: string = "https://hotpepper.jp/";
-  export const LOG_LEVEL: string = 'silly';
+  export const LOG_LEVEL: string = 'info';
 }
 
 export namespace myWindows {
@@ -20,7 +20,7 @@ export namespace myWindows {
 }
 
 export namespace myProperties {
-  export const WAIT_SECOND: number = 1000;
+  export const WAIT_SECOND: number = 100;
   export const PAGE_LIMIT: number = 1200;
 }
 

@@ -13,7 +13,7 @@ import { myConst, myPrefNos, myProperties, myWindows, mySelector, myArrays } fro
 // import modules
 import { BrowserWindow, app, ipcMain, Tray, Menu, nativeImage } from "electron"; // electron
 import * as path from "node:path"; // path
-import { Scrape } from "./class/ElScrapeCore0719"; // scraper
+import { Scrape } from "./class/ElScrapeCore0801"; // scraper
 import Dialog from "./class/ElDialog0721"; // dilog
 import Logger from "./class/ElLogger"; // logger
 import CSV from "./class/ElCsv0414"; // csv
@@ -279,58 +279,56 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
       try {
         // shop data
         let myShopObj: any = {
-          telephone: "", // telephone
-          shopname1: "", // shopname1
-          area: "", // area
-          shopname2: "", // shopname2
-          genre: "", // genre
-          address: "", // address1
-          businesstime: "", // businesstime
+          電話番号: "", // telephone
+          店名1: "", // shopname1
+          エリア: "", // area
+          店名2: "", // shopname2
+          ジャンル: "", // genre
+          住所: "", // address1
+          営業時間: "", // businesstime
         };
         // goto top
-        await puppScraper.doGo(url[0]);
-        // wait for 2 sec
-        await puppScraper.doWaitFor(2 * myProperties.WAIT_SECOND);
-        logger.debug(`app: scraping ${url[0]}`);
+        await puppScraper.doGo(url[0] +'tel/');
+        logger.debug(`app: scraping ${url[0]} +'tel/'`);
         // update target url
-        event.sender.send("urlUpdate", url[0]);
-        // phone number
-        // click login button
-        await puppScraper.doClick(mySelector.phoneLinkSelector);
-        // wait for 3 sec
-        await puppScraper.doWaitFor(3 * myProperties.WAIT_SECOND);
+        event.sender.send("urlUpdate", url[0] + 'tel/');
         // phonenumber
         const phonenumber: string = await doScrape(mySelector.phoneSelector);
         const checkedPhonenumber: string = checkEvaluation(phonenumber);
-        myShopObj['telephone'] = checkedPhonenumber;
+        logger.silly(checkedPhonenumber);
+        myShopObj['電話番号'] = checkedPhonenumber;
         // goback to previous page
-        await puppScraper.doGoBack();
-        // wait for 2 sec
-        await puppScraper.doWaitFor(2 * myProperties.WAIT_SECOND);
+        await puppScraper.doGo(url[0]);
+        await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
         // shopname
         const shopname1: string = await doScrape(mySelector.pepperMainShopnameSelector);
         const checkedShopName: string = checkEvaluation(shopname1);
-        myShopObj['shopname1'] = checkedShopName;
-        // area
+        logger.silly(checkedShopName);
+        myShopObj['店名1'] = checkedShopName;
         const area: string = await doScrape(mySelector.pepperAreaSelector);
         const checkedArea: string = checkEvaluation(area);
-        myShopObj['area'] = checkedArea;
+        logger.silly(checkedArea);
+        myShopObj['エリア'] = checkedArea;
         // shopname2
         const shopname2: string = await doScrape(mySelector.pepperSubShopnameSelector);
         const checkedShopName2: string = checkEvaluation(shopname2);
-        myShopObj['shopname2'] = checkedShopName2;
+        logger.silly(checkedShopName2);
+        myShopObj['店名2'] = checkedShopName2;
         // genre
         const genre: string = await doScrape(mySelector.pepperGenreSelector);
         const checkedGenre: string = checkEvaluation(genre);
-        myShopObj['genre'] = checkedGenre;
+        logger.silly(checkedGenre);
+        myShopObj['ジャンル'] = checkedGenre;
         // address1
         const address: string = await doScrape(mySelector.pepperAddressSelector);
         const checkedAddress: string = checkEvaluation(address);
-        myShopObj['address'] = checkedAddress;
+        logger.silly(checkedAddress);
+        myShopObj['住所'] = checkedAddress;
         // businesstime
         const businesstime: string = await doScrape(mySelector.pepperBusinesstimeSelector);
         const checkedBusinesstime: string = checkEvaluation(businesstime);
-        myShopObj['businesstime'] = checkedBusinesstime;
+        logger.silly(checkedBusinesstime);
+        myShopObj['営業時間'] = checkedBusinesstime;
         // shop counter
         shopSuccessCounter++;
         // push into array
@@ -397,8 +395,6 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
     // goto top
     await puppScraper.doGo(`${myConst.pepper_BASE}/${prefNo}/lst/`);
     logger.debug(`scrapeurl: scraping area: ${myConst.pepper_BASE}/${prefNo}/`);
-    // wait for datalist
-    await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
     // url exists
     if (!await puppScraper.doCheckSelector(mySelector.pepperTotalNumSelector)) {
       throw new Error('scrapeurl: scrape area: no key data');
@@ -432,8 +428,6 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
         // goto top
         await puppScraper.doGo(areaUrl);
         logger.silly(`scrapeurl: ${areaUrl}`);
-        // wait for datalist
-        await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
         // numbers for loop
         const pageNumberArray: number[] = makeNumberRange(6, 27);
         // area loop

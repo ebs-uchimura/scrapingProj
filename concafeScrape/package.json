@@ -1,16 +1,17 @@
 {
-  "name": "concafescrape",
-  "productName": "concafescrape",
+  "name": "concafe-scrape",
+  "productName": "concafe-scrape",
   "version": "0.2.0",
   "description": "application for scraping",
   "main": "concafe.ts",
   "scripts": {
-    "start": "npm run exec",
-    "exec": "ts-node concafe.ts"
+    "start": "ts-node concafe.ts"
   },
   "keywords": [],
-  "author": "ebs-uchimura <uchimura@ebisu-do.jp>",
-  "license": "MIT",
+  "author": {
+    "name": "ebs-uchimura",
+    "email": "uchimura@ebisu-do.jp"
+  },
   "dependencies": {
     "csv": "^6.3.11",
     "iconv-lite": "^0.6.3",
@@ -18,5 +19,6 @@
   },
   "devDependencies": {
     "ts-node": "^10.9.2"
-  }
+  },
+  "license": "GPL-3.0"
 }

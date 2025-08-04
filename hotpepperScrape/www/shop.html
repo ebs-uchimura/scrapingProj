@@ -112,8 +112,7 @@
     window.api.on("statusUpdate", arg => {
       try {
         // status Update
-        scrapingstatusDom.innerHTML = `
-          scraping: ${arg.shopname1} ${arg.telephone}`;
+        scrapingstatusDom.innerHTML = `scraping: ${arg.店名1} ${arg.電話番号}`;
 
       } catch (e) {
         // error

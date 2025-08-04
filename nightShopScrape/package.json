@@ -1,17 +1,18 @@
 {
-  "name": "nightscrape",
-  "productName": "nightscrape",
+  "name": "night-scrape",
+  "productName": "night-scrape",
   "version": "0.1.0",
   "description": "Electron application for scraping",
   "main": "build/night.js",
   "scripts": {
     "build": "tsc && chcp 65001",
-    "package-win": "tsc && chcp 65001 && electron-packager . --asar=true --overwrite --platform=win32 --arch=ia32 --prune=true --icon=./assets/nightshop.ico --out=release-builds --electronVersion=28.2.0",
-    "start": "tsc && chcp 65001 && electron ."
+    "start": "npm run build && electron ."
   },
   "keywords": [],
-  "author": "ebs-uchimura <uchimura@ebisu-do.jp>",
-  "license": "MIT",
+  "author": {
+    "name": "ebs-uchimura",
+    "email": "uchimura@ebisu-do.jp"
+  },
   "dependencies": {
     "csv-parse": "^5.5.5",
     "csv-stringify": "^6.4.6",
@@ -29,5 +30,6 @@
     "@types/node": "^20.8.9",
     "electron": "^29.1.1",
     "electron-packager": "^17.1.2"
-  }
+  },
+  "license": "GPL-3.0"
 }

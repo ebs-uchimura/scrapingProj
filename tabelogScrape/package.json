@@ -1,17 +1,18 @@
 {
-  "name": "gourmetscrape",
-  "productName": "gourmetscrape",
+  "name": "gourmet-scrape",
+  "productName": "gourmet-scrape",
   "version": "1.3.4",
   "description": "Electron application for scraping",
   "main": "build/tabelog.js",
   "scripts": {
     "build": "tsc && chcp 65001",
-    "package-win": "tsc && chcp 65001 && electron-packager . --asar --overwrite --platform=win32 --arch=ia32 --prune=false --icon=./assets/gourmet.ico --out=release-builds",
-    "start": "tsc && chcp 65001 && electron ."
+    "start": "npm run build && electron ."
   },
   "keywords": [],
-  "author": "ebs-uchimura <uchimura@ebisu-do.jp>",
-  "license": "MIT",
+  "author": {
+    "name": "ebs-uchimura",
+    "email": "uchimura@ebisu-do.jp"
+  },
   "dependencies": {
     "csv": "^6.3.11",
     "dotenv": "^17.2.0",
@@ -25,5 +26,6 @@
     "@types/node": "^24.0.13",
     "electron": "^36.5.0",
     "electron-packager": "^17.1.2"
-  }
+  },
+  "license": "GPL-3.0"
 }
