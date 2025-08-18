@@ -87,6 +87,10 @@ footer {
   font-size: 0.8rem;
 }
 
+.input_area {
+  margin: 10px 0;
+}
+
 /* general buttons */
 .cp_ipselect02 {
   position: relative;

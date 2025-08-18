@@ -20,6 +20,7 @@ export namespace myWindows {
 }
 
 export namespace myProperties {
+  export const WAIT_MILLSECOND: number = 100;
   export const WAIT_SECOND: number = 1000;
   export const PAGE_LIMIT: number = 1200;
 }

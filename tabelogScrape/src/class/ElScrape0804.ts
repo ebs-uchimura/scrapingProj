@@ -1,43 +1,35 @@
 /**
- * ElScrapeCore.ts
+ * ElScrape.ts
  *
  * class：ElScrape
- * function：scraping site with native chrome
- * updated: 2025/07/19
+ * function：scraping site
+ * updated: 2025/08/04
  **/
 
 'use strict';
 
-// consts
-const USER_ROOT_PATH: string = process.env[process.platform == "win32" ? "USERPROFILE" : "HOME"] ?? ''; // user path
-const CHROME_EXEC_PATH1: string = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'; // chrome.exe path1
-const CHROME_EXEC_PATH2: string = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'; // chrome.exe path2
-const CHROME_EXEC_PATH3: string = '\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'; // chrome.exe path3
-const DISABLE_EXTENSIONS: string = '--disable-extensions'; // disable extension
-
 // define modules
-import * as path from "node:path"; // path
-import * as fs from "node:fs"; // fs
 import { setTimeout } from 'node:timers/promises'; // wait for seconds
-import puppeteer from 'puppeteer-core'; // Puppeteer for scraping
+import puppeteer from 'puppeteer'; // Puppeteer for scraping
+import fetch from 'cross-fetch'; // required 'fetch'
+import { PuppeteerBlocker } from '@ghostery/adblocker-puppeteer';
 
 //* Interfaces
 // puppeteer options
 interface puppOption {
   headless: boolean; // display mode
-  executablePath: string; // exepath
   ignoreDefaultArgs: string[]; // ignore extensions
   args: string[]; // args
 }
 
 // class
 export class Scrape {
+  static adblock: boolean; // adblock flg
   static logger: any; // logger
   static browser: any; // static browser
   static page: any; // static page
   static pages: any[]; // static page
   private _result: boolean; // scrape result
-  private _height: number; // body height
 
   // constractor
   constructor(logger: any) {
@@ -45,26 +37,35 @@ export class Scrape {
     Scrape.logger = logger;
     // result
     this._result = false;
-    // height
-    this._height = 0;
     Scrape.logger.debug('scrape: constructed');
   }
 
   // initialize
-  init(): Promise<void> {
+  init(flg: boolean = false): Promise<void> {
     return new Promise(async (resolve, reject) => {
       try {
         Scrape.logger.debug('scrape: initialize mode.');
+        // loggeer instance
+        Scrape.adblock = flg;
+        // pupp option
         const puppOptions: puppOption = {
           headless: true, // no display mode
-          executablePath: getChromePath(), // chrome.exe path
-          ignoreDefaultArgs: [DISABLE_EXTENSIONS], // ignore extensions
+          ignoreDefaultArgs: [], // ignore extensions
           args: [], // args
         };
         // lauch browser
         Scrape.browser = await puppeteer.launch(puppOptions);
-        // create new page
-        Scrape.page = await Scrape.browser.newPage();
+        // get all tabs
+        Scrape.page = (await Scrape.browser.pages())[0];
+
+        // use adblock
+        if (Scrape.adblock) {
+          // set adblock
+          PuppeteerBlocker.fromPrebuiltAdsAndTracking(fetch).then((blocker) => {
+            blocker.enableBlockingInPage(Scrape.page);
+          });
+        }
+
         // set viewport
         Scrape.page.setViewport({
           width: 1920,
@@ -156,13 +157,8 @@ export class Scrape {
       try {
         Scrape.logger.debug('scrape: doGo mode.');
         // goto target page
+        Scrape.logger.debug(targetPage);
         await Scrape.page.goto(targetPage);
-        // get page height
-        const height = await Scrape.page.evaluate(() => {
-          return document.body.scrollHeight;
-        });
-        // body height
-        this._height = height;
         // resolved
         resolve();
 
@@ -282,24 +278,6 @@ export class Scrape {
     });
   }
 
-  // mouse wheel
-  mouseWheel(): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        Scrape.logger.debug('scrape: mouseWheel mode.');
-        // mouse wheel to bottom
-        await Scrape.page.mouse.wheel({ deltaY: this._height - 200 });
-        // resolved
-        resolve();
-
-      } catch (e: unknown) {
-        Scrape.logger.error(e);
-        // reject
-        reject();
-      }
-    });
-  }
-
   // eval
   doSingleEval(selector: string, property: string): Promise<string> {
     return new Promise(async (resolve, _) => {
@@ -393,6 +371,47 @@ export class Scrape {
     });
   }
 
+  // waitSelector
+  doWaitSelector(elem: string, time: number): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        Scrape.logger.debug('scrape: doWaitSelector mode.');
+        // target item
+        const exists: boolean = await Scrape.page.$eval(elem, () => true).catch(() => false);
+
+        // if element exists
+        if (exists) {
+          // wait for loading selector
+          await Scrape.page.waitForSelector(elem, { timeout: time });
+          // resolved
+          resolve();
+        }
+
+      } catch (e: unknown) {
+        Scrape.logger.error(e);
+        // reject
+        reject();
+      }
+    });
+  }
+
+  // wait for navigaion
+  doWaitForNav(time: number): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        Scrape.logger.debug('scrape: doWaitForNav mode.');
+        // wait for time
+        await Scrape.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: time });
+        resolve();
+
+      } catch (e: unknown) {
+        Scrape.logger.error(e);
+        // reject
+        reject();
+      }
+    });
+  }
+
   // check Selector
   doCheckSelector(elem: string): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
@@ -458,31 +477,6 @@ export class Scrape {
   // get result
   get getSucceed(): boolean {
     return this._result;
-  }
-}
-
-// get chrome absolute path
-const getChromePath = (): string => {
-  // chrome tmp path
-  const tmpPath: string = path.join(USER_ROOT_PATH, CHROME_EXEC_PATH3);
-
-  // 32bit
-  if (fs.existsSync(CHROME_EXEC_PATH1)) {
-    return CHROME_EXEC_PATH1 ?? '';
-
-    // 64bit
-  } else if (fs.existsSync(CHROME_EXEC_PATH2)) {
-    return CHROME_EXEC_PATH2 ?? '';
-
-    // user path
-  } else if (fs.existsSync(tmpPath)) {
-    return tmpPath ?? '';
-
-    // error
-  } else {
-    // error logging
-    console.log('16: no chrome path error');
-    return '';
   }
 }
 

@@ -3,13 +3,13 @@
  *
  * name：ElLogger
  * function：Logging operation for electron
- * updated: 2025/05/17
+ * updated: 2025/07/21
  **/
 
 'use strict';
 
 // define modules
-import * as path from 'path'; // path
+import * as path from 'node:path'; // path
 import { app } from 'electron'; // electron
 import logger from 'electron-log'; // Logger
 
@@ -41,14 +41,14 @@ class ELLogger {
       `${dirpath}/${prefix}_${curr}`;
   }
 
+  // info
+  info = (message: string) => {
+    logger.info(message);
+  };
+
   // debug
   debug = (message: string) => {
     logger.debug(message);
-  };
-
-  // inquire
-  info = (message: string) => {
-    logger.info(message);
   };
 
   // verbose
@@ -61,12 +61,17 @@ class ELLogger {
     logger.silly(message);
   };
 
-  // empty or not
+  // error
   error = (e: unknown) => {
     if (e instanceof Error) {
       // error
-      logger.error(process.pid, e.stack);
+      logger.error(e.stack);
     }
+  };
+
+  // warn
+  warn = (message: string) => {
+    logger.warn(message);
   };
 }
 

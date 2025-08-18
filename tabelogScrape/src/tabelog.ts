@@ -10,12 +10,19 @@ import { myConst, myCategories, myProperties, myWindows, mySelector, myArrays } 
 // import modules
 import { BrowserWindow, app, ipcMain, Tray, Menu, nativeImage } from 'electron'; // electron
 import * as path from 'node:path'; // path
-import { Scrape } from './class/ElScrapeCore0719'; // scraper
+import { Scrape } from './class/ElScrape0804'; // scraper
 import Dialog from './class/ElDialog0721'; // dilog
 import Logger from './class/ElLogger'; // logger
 import CSV from './class/ElCsv0414'; // csv
-import MKDir from './class/ElMkdir0414'; // mkdir
-
+/// Variables
+let globalRootPath: string; // root path
+// production
+if (!myConst.DEV_FLG) {
+  globalRootPath = path.join(path.resolve(), 'resources')
+  // development
+} else {
+  globalRootPath = path.join(__dirname, '..');
+}
 // loggeer instance
 const logger: Logger = new Logger(myConst.COMPANY_NAME, myConst.APP_NAME, myConst.LOG_LEVEL);
 // csv
@@ -24,8 +31,6 @@ const csvMaker: CSV = new CSV(myConst.CSV_ENCODING, logger);
 const dialogMaker: Dialog = new Dialog(logger);
 // scraper
 const puppScraper: Scrape = new Scrape(logger);
-// mkdir
-const mkdirManager = new MKDir(logger);
 
 // desktop path
 const dir_home: string =
@@ -39,10 +44,6 @@ const dir_desktop: string = path.join(dir_home, 'Desktop');
 let mainWindow: Electron.BrowserWindow;
 // isQuiting flg
 let isQuiting: boolean;
-// final Csv Array
-let finalCsvArray: any = [];
-// final Result Array
-let finalResultArray: any = [];
 
 // create window
 const createWindow = (): void => {
@@ -61,7 +62,7 @@ const createWindow = (): void => {
     // hide menu bar
     mainWindow.setMenuBarVisibility(false);
     // load index.html
-    mainWindow.loadFile(path.join(__dirname, '..', 'www', 'index.html'));
+    mainWindow.loadFile(path.join(globalRootPath, 'www', 'index.html'));
     // ready
     mainWindow.once('ready-to-show', () => {
       if (!app.isPackaged) {
@@ -106,12 +107,9 @@ app.enableSandbox();
 app.on('ready', async () => {
   logger.info('app: electron is ready');
   // create window
-  createWindow();
-  // make dir
-  await mkdirManager.mkDir('csv');
-  // icon
+  createWindow();  // icon
   const icon: Electron.NativeImage = nativeImage.createFromPath(
-    path.join(__dirname, '../assets/gourmet.ico')
+    path.join(globalRootPath, 'assets', 'gourmet.png')
   );
   // tray
   const mainTray: Electron.Tray = new Tray(icon);
@@ -208,7 +206,7 @@ ipcMain.on('page', async (_: any, arg: any) => {
         url = '';
     }
     // transfer
-    await mainWindow.loadFile(path.join(__dirname, '..', 'www', url));
+    await mainWindow.loadFile(path.join(globalRootPath, 'www', url));
 
   } catch (e: unknown) {
     // show error message
@@ -272,21 +270,21 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
     let shopSuccessCounter: number = 0;
     // shop fail counter
     let shopFailCounter: number = 0;
-    // final Result Array
-    finalResultArray = [];
     // total counter
     let totalCounter: number = arg.record.length;
+    // urls array
+    let finalResultArray: any[] = [];
     // error array
     let errorResultArray: any[] = [];
-    // initialize CSV array
-    finalResultArray = [];
+    // url array
+    const urlArray: any[] = arg.record.flat();
     // initialize scraper
-    await puppScraper.init();
+    await puppScraper.init(true);
     // update total
     event.sender.send('shoptotal', totalCounter);
 
     // scrape pages
-    for (let url of arg.record) {
+    for (let url of urlArray) {
       try {
         // shop data
         let myShopObj: any = {
@@ -306,76 +304,92 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
           shopphone2: '', // shopphone2
         };
         // goto top
-        await puppScraper.doGo(url[0]);
-        // wait for 2 sec
-        await puppScraper.doWaitFor(2 * myProperties.WAIT_SECOND);
-        logger.debug(`app: scraping ${url[0]}`);
+        await puppScraper.doGo(url);
+        logger.debug(`app: scraping ${url}`);
         // update target url
-        event.sender.send('statusUpdate', url[0]);
+        event.sender.send('statusUpdate', url);
+        // goto top
+        await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
         // shopname
         const shopname: string = await doScrape(mySelector.tabeLogMainShopnameSelector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedShopName: string = checkEvaluation(shopname);
         myShopObj['shopname'] = checkedShopName;
         // station
         const station: string = await doScrape(mySelector.tabeLogStationSelector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedStation: string = checkEvaluation(station);
         myShopObj['station'] = checkedStation;
         // shopname2
         const shopname2: string = await doScrape(mySelector.tabeLogMainSubshopname);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedShopName2: string = checkEvaluation(shopname2);
         myShopObj['shopname2'] = checkedShopName2;
         // genre
         const genre: string = await doScrape(mySelector.tabelLogGenreSelector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedGenre: string = checkEvaluation(genre);
         myShopObj['genre'] = checkedGenre;
         // telephone
         const telephone: string = await doScrape(mySelector.tabeLogReservephoneSelector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedTelephone: string = checkEvaluation(telephone);
         myShopObj['telephone'] = checkedTelephone;
         // address1
         const address1: string = await doScrape(mySelector.tabeLogAddress1Selector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedAddress1: string = checkEvaluation(address1);
         myShopObj['address1'] = checkedAddress1;
         // address2
         const address2: string = await doScrape(mySelector.tabeLogAddress2Selector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedAddress2: string = checkEvaluation(address2);
         myShopObj['address2'] = checkedAddress2;
         // address3
         const address3: string = await doScrape(mySelector.tabeLogAddress3Selector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedAddress3: string = checkEvaluation(address3);
         myShopObj['address3'] = checkedAddress3;
         // businesstime
         const businesstime: string = await doScrape(mySelector.tabeLogBusinesstimeSelector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedBusinesstime: string = checkEvaluation(businesstime);
         myShopObj['businesstime'] = checkedBusinesstime;
         // seat
         const seat: string = await doScrape(mySelector.tabeLogSheetSelector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedSeat: string = checkEvaluation(seat);
         myShopObj['seat'] = checkedSeat;
         // homepage
         const homepage: string = await doScrape(mySelector.tabeLogHomepageSelector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedHomepage: string = checkEvaluation(homepage);
         myShopObj['homepage'] = checkedHomepage;
         // shopphone
         const shopphone: string = await doScrape(mySelector.tabeLogTelephoneSelector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedShopphone: string = checkEvaluation(shopphone);
         myShopObj['shopphone'] = checkedShopphone;
         // shopphone2
         const shopphone2: string = await doScrape(mySelector.tabeLogTelephone2Selector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedShopphone2: string = checkEvaluation(shopphone2);
         myShopObj['shopphone2'] = checkedShopphone2;
         // shop counter
         shopSuccessCounter++;
         // push into array
         finalResultArray.push(myShopObj);
+        // update target url
+        event.sender.send("statusUpdate", myShopObj.shopname);
 
       } catch (err: unknown) {
         // shop counter
         shopFailCounter++;
         // push into error url array
-        errorResultArray.push({ url: url[0] });
+        errorResultArray.push({ url: url });
         // error
         logger.error(err);
+
       } finally {
         // send success counter
         event.sender.send('shopsuccess', shopSuccessCounter);
@@ -403,6 +417,8 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
       dialogMaker.showmessage('error', `${e.message}`);
     }
   } finally {
+    // goback to previous page
+    await puppScraper.doClose();
   }
 });
 
@@ -413,7 +429,9 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
     // init counter
     let urlSuccessCounter: number = 0;
     // final Csv Array
-    finalCsvArray = [];
+    let finalCsvArray: any = [];
+    // start area index
+    const startAreaindex: number = Number(arg.area);
     // pref index
     const prefindex: number = Number(arg.index);
     // pref
@@ -423,7 +441,7 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
     const prefPadded: string = String(prefindex).padStart(2, '0');
     logger.debug(`scrapeurl: ${myConst.TABELOG_BASE}${pref}/`);
     // initialize scraper
-    await puppScraper.init();
+    await puppScraper.init(false);
     // goto top
     await puppScraper.doGo(`${myConst.TABELOG_BASE}${pref}/`);
     logger.debug(`scrapeurl: scraping area: ${myConst.TABELOG_BASE}${pref}/`);
@@ -447,7 +465,7 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
     event.sender.send('urltotal', totalPrefCounter);
     logger.debug(`scrapeurl: prefecture total is ${totalPrefCounter} urls`);
     // numbers for loop
-    const areaNumberArray: number[] = makeNumberRange(1, 31);
+    const areaNumberArray: number[] = makeNumberRange(startAreaindex, 31);
 
     // area loop
     for (let areaNum of areaNumberArray) {
@@ -456,7 +474,7 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
         const zeroPadded: string = String(areaNum).padStart(2, '0');
         // area url
         const areaUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/`;
-        console.log(`areaUrl: ${areaUrl}`);
+        logger.silly(`areaUrl: ${areaUrl}`);
         // update target url
         event.sender.send('statusUpdate', areaUrl);
         // goto top
@@ -507,7 +525,7 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
             const cityPadded: string = String(cityNum).padStart(2, '0');
             // city url
             const cityUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/`;
-            console.log(`cityUrl: ${cityUrl}`);
+            logger.silly(`cityUrl: ${cityUrl}`);
             // update target url
             event.sender.send('statusUpdate', cityUrl);
             // goto top
@@ -540,7 +558,7 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
               logger.debug('scrapeurl result: ');
               // push into array
               finalCsvArray.push(finalCityUrl);
-              console.log(`city: ${finalCityUrl}`);
+              logger.silly(`city: ${finalCityUrl}`);
               // countup
               urlSuccessCounter += totalCityCounter;
               // send success counter
@@ -556,7 +574,7 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
                 const categoryUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${myCategories.CATEGORIES[i]}`;
                 // update target url
                 event.sender.send('statusUpdate', categoryUrl);
-                console.log(`categoryUrl: ${categoryUrl}`);
+                logger.silly(`categoryUrl: ${categoryUrl}`);
                 // goto top
                 await puppScraper.doGo(categoryUrl);
                 logger.debug(`scrapeurl: category: ${categoryUrl}`);
@@ -585,7 +603,7 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
                   const finalCategoryUrl: any = await doScrapeUrl(categoryUrl, mySelector.tabeLogCategoryUrlSelector, 'category', categoryPageCounter, event);
                   // set to csv array
                   finalCsvArray.push(finalCategoryUrl);
-                  console.log(`category: ${finalCategoryUrl}`);
+                  logger.silly(`category: ${finalCategoryUrl}`);
                   // countup
                   urlSuccessCounter += totalCategoriesCounter;
                   // send success counter
@@ -601,7 +619,7 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
                     const genreUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${myCategories.GENRES[j]}`;
                     // update target url
                     event.sender.send('statusUpdate', genreUrl);
-                    console.log(`genreurl: ${genreUrl}`);
+                    logger.silly(`genreurl: ${genreUrl}`);
                     // goto top
                     await puppScraper.doGo(genreUrl);
                     logger.debug(`scrapeurl: genre: ${genreUrl}`);
@@ -630,7 +648,7 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
                       const finalGenreUrl: any = await doScrapeUrl(genreUrl, mySelector.tabeLogCategoryUrlSelector, 'genre', genrePageCounter, event);
                       // set to csv array
                       finalCsvArray.push(finalGenreUrl);
-                      console.log(`genre: ${finalGenreUrl}`);
+                      logger.silly(`genre: ${finalGenreUrl}`);
                       // countup
                       urlSuccessCounter += totalGenreCounter;
                       // send success counter
@@ -760,7 +778,7 @@ const doScrapeUrl = async (url: string, selector: string, mode: string, limit: n
             await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
             // url
             const tmpUrls: any = await puppScraper.doMultiEval(selector, 'href');
-            console.log(tmpUrls);
+            logger.silly(tmpUrls);
             // make url obj
             const tmpUrlObj: any = tmpUrls.map((url: any) => {
               return {
