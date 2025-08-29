@@ -33,6 +33,7 @@ export namespace myCategories {
 
 /** selector */
 export namespace mySelector {
+
   // Tabelog selector
   export const tabeLogUrlSelector: string = ".list-rst__rst-name-target";
   // Tabelog category selector
@@ -80,6 +81,8 @@ export namespace mySelector {
   // Tabelog telephone2 selector
   export const tabeLogTelephone2Selector: string =
     "#rst-data-head > table:nth-child(9) > tbody > tr:nth-child(5) > td > p > strong";
+  // Tabelog selector
+  export const errorUrlSelector: string = "#contents > div > div.error-common.error-common--404 > h2";
 }
 
 /** columns */
@@ -100,3 +103,54 @@ export namespace myArrays {
   ];
 }
 
+export namespace myPrefectures {
+  export const duplicateNos: { [key: string]: number[] } = {
+    'hokkaido': [1, 2],
+    'aomori': [],
+    'iwate': [],
+    'miyagi': [],
+    'akita': [],
+    'yamagata': [],
+    'fukushima': [],
+    'ibaraki': [],
+    'tochigi': [],
+    'gunma': [],
+    'saitama': [],
+    'chiba': [],
+    'tokyo': [],
+    'kanagawa': [1, 2],
+    'niigata': [],
+    'toyama': [],
+    'ishikawa': [],
+    'fukui': [],
+    'yamanashi': [],
+    'nagano': [],
+    'gifu': [],
+    'shizuoka': [],
+    'aichi': [],
+    'mie': [],
+    'shiga': [],
+    'kyoto': [1, 2, 3, 4, 5],
+    'osaka': [1, 2, 3],
+    'hyogo': [1],
+    'nara': [],
+    'wakayama': [],
+    'tottori': [],
+    'shimane': [],
+    'okayama': [],
+    'hiroshima': [],
+    'yamaguchi': [],
+    'tokushima': [],
+    'kagawa': [],
+    'ehime': [],
+    'kochi': [],
+    'fukuoka': [1, 4],
+    'saga': [],
+    'nagasaki': [],
+    'kumamoto': [],
+    'oita': [],
+    'miyazaki': [],
+    'kagoshima': [],
+    'okinawa': [],
+  }
+}

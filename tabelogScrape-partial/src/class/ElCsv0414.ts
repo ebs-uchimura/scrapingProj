@@ -9,8 +9,8 @@
 'use strict';
 
 // define modules
-import { readFile, writeFile } from 'node:fs/promises'; // file system
 import { dialog } from 'electron'; // electron
+import { readFile, writeFile } from 'node:fs/promises'; // file system
 import { parse } from 'csv-parse/sync'; // csv parser
 import { stringify } from 'csv-stringify/sync'; // csv stringify
 import iconv from 'iconv-lite'; // encoding
@@ -55,6 +55,7 @@ class CSV {
             from_line: 2, // ignore first line
             skip_empty_lines: true // ignore empty cell
           });
+          console.log(tmpRecords);
           CSV.logger.info('csv: getCsvData finished');
           // resolve
           resolve({
@@ -67,7 +68,7 @@ class CSV {
         }
       } catch (e) {
         // error
-        CSV.logger.error(e);
+        console.log(e);
         reject();
       }
     });
@@ -90,7 +91,7 @@ class CSV {
         resolve();
       } catch (e) {
         // error
-        CSV.logger.error(e);
+        console.log(e);
         reject();
       }
     });
@@ -127,13 +128,13 @@ class CSV {
           })
           .catch((err: unknown) => {
             // error
-            CSV.logger.error(err);
+            console.log(err);
             // rejected
             reject('error');
           });
       } catch (e) {
         // error
-        CSV.logger.error(e);
+        console.log(e);
         // error type
         if (e instanceof Error) {
           reject('error');

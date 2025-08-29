@@ -8,16 +8,24 @@
 
 // 定数
 // namespace
-import { myConst, myPrefNos, myProperties, myWindows, mySelector, myArrays } from "./consts/globalvariables";
+import { myConst, myProperties, myPrefNos, myWindows, mySelector, myArrays } from "./consts/globalvariables";
 
 // import modules
 import { BrowserWindow, app, ipcMain, Tray, Menu, nativeImage } from "electron"; // electron
 import * as path from "node:path"; // path
-import { Scrape } from "./class/ElScrapeCore0801"; // scraper
+import { Scrape } from "./class/ElScrape0804"; // scraper
 import Dialog from "./class/ElDialog0721"; // dilog
 import Logger from "./class/ElLogger"; // logger
 import CSV from "./class/ElCsv0414"; // csv
-
+/// Variables
+let globalRootPath: string; // root path
+// production
+if (!myConst.DEV_FLG) {
+  globalRootPath = path.join(path.resolve(), 'resources')
+  // development
+} else {
+  globalRootPath = path.join(__dirname, '..');
+}
 // loggeer instance
 const logger: Logger = new Logger(myConst.COMPANY_NAME, myConst.APP_NAME, myConst.LOG_LEVEL);
 // csv
@@ -38,6 +46,8 @@ const dir_desktop: string = path.join(dir_home, "Desktop");
 let mainWindow: Electron.BrowserWindow;
 // isQuiting flg
 let isQuiting: boolean;
+// initialize CSV array
+let finalResultArray: any[] = [];
 
 // create window
 const createWindow = (): void => {
@@ -55,12 +65,12 @@ const createWindow = (): void => {
     // hide menu bar
     mainWindow.setMenuBarVisibility(false);
     // load index.html
-    mainWindow.loadFile(path.join(__dirname, "../www/index.html"));
+    mainWindow.loadFile(path.join(globalRootPath, "www", "index.html"));
     // ready
     mainWindow.once("ready-to-show", () => {
       if (!app.isPackaged) {
         // dev mode
-        //mainWindow.webContents.openDevTools();
+        mainWindow.webContents.openDevTools();
       }
     });
 
@@ -81,6 +91,7 @@ const createWindow = (): void => {
       // destroy window
       mainWindow.destroy();
     });
+
   } catch (e: unknown) {
     // show error message
     logger.error(e);
@@ -102,7 +113,7 @@ app.on("ready", async () => {
   createWindow();
   // icon
   const icon: Electron.NativeImage = nativeImage.createFromPath(
-    path.join(__dirname, "../assets/pepper.ico")
+    path.join(globalRootPath, "assets", "pepper.ico")
   );
   // tray
   const mainTray: Electron.Tray = new Tray(icon);
@@ -179,19 +190,19 @@ ipcMain.on("page", async (_: any, arg: any) => {
       // top page
       case "top_page":
         // set url
-        url = "../www/index.html";
+        url = "index.html";
         break;
 
       // url page
       case "url_page":
         // set url
-        url = "../www/url.html";
+        url = "url.html";
         break;
 
       // shop page
       case "shop_page":
         // set url
-        url = "../www/shop.html";
+        url = "shop.html";
         break;
 
       default:
@@ -199,7 +210,7 @@ ipcMain.on("page", async (_: any, arg: any) => {
         url = "";
     }
     // transfer
-    await mainWindow.loadFile(path.join(__dirname, url));
+    await mainWindow.loadFile(path.join(globalRootPath, 'www', url));
 
   } catch (e: unknown) {
     // show error message
@@ -264,21 +275,30 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
     // shop fail counter
     let shopFailCounter: number = 0;
     // total counter
-    let totalCounter: number = arg.record.length;
-    // error array
-    let errorResultArray: any[] = [];
-    // initialize CSV array
-    let finalResultArray: any[] = [];
+    let totalCounter: number = arg.urls.record.length;
+    // init array
+    finalResultArray = [];
+    // start point
+    const tmpPosition: any = arg.pos ?? 0;
+    // start point
+    const startPosition: number = Number(tmpPosition);
+    // url array
+    const urlArray: any[] = arg.urls.record.flat();
     // initialize scraper
-    await puppScraper.init();
+    await puppScraper.init(true);
     // update total
-    event.sender.send("total", totalCounter);
+    event.sender.send("total", totalCounter - startPosition);
+    // partnumber
+    const totalNumber: number[] = makeNumberRange(startPosition, totalCounter);
 
     // scrape pages
-    for (let url of arg.record) {
+    for await (let nm of totalNumber) {
       try {
+        // target url
+        const targetUrl: string = urlArray[nm];
         // shop data
         let myShopObj: any = {
+          URL: "", // url
           電話番号: "", // telephone
           店名1: "", // shopname1
           エリア: "", // area
@@ -286,63 +306,113 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
           ジャンル: "", // genre
           住所: "", // address1
           営業時間: "", // businesstime
+          定休日: "", // holiday
         };
         // goto top
-        await puppScraper.doGo(url[0] +'tel/');
-        logger.debug(`app: scraping ${url[0]} +'tel/'`);
+        await puppScraper.doGo(targetUrl + 'tel/');
+        logger.debug(`app: scraping ${targetUrl} +'tel/'`);
         // update target url
-        event.sender.send("urlUpdate", url[0] + 'tel/');
+        event.sender.send("urlUpdate", targetUrl + 'tel/');
+        // url
+        myShopObj['URL'] = targetUrl;
         // phonenumber
         const phonenumber: string = await doScrape(mySelector.phoneSelector);
+        await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
         const checkedPhonenumber: string = checkEvaluation(phonenumber);
         logger.silly(checkedPhonenumber);
         myShopObj['電話番号'] = checkedPhonenumber;
         // goback to previous page
-        await puppScraper.doGo(url[0]);
-        await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
-        // shopname
-        const shopname1: string = await doScrape(mySelector.pepperMainShopnameSelector);
-        const checkedShopName: string = checkEvaluation(shopname1);
-        logger.silly(checkedShopName);
-        myShopObj['店名1'] = checkedShopName;
-        const area: string = await doScrape(mySelector.pepperAreaSelector);
-        const checkedArea: string = checkEvaluation(area);
-        logger.silly(checkedArea);
-        myShopObj['エリア'] = checkedArea;
-        // shopname2
-        const shopname2: string = await doScrape(mySelector.pepperSubShopnameSelector);
-        const checkedShopName2: string = checkEvaluation(shopname2);
-        logger.silly(checkedShopName2);
-        myShopObj['店名2'] = checkedShopName2;
-        // genre
-        const genre: string = await doScrape(mySelector.pepperGenreSelector);
-        const checkedGenre: string = checkEvaluation(genre);
-        logger.silly(checkedGenre);
-        myShopObj['ジャンル'] = checkedGenre;
-        // address1
-        const address: string = await doScrape(mySelector.pepperAddressSelector);
-        const checkedAddress: string = checkEvaluation(address);
-        logger.silly(checkedAddress);
-        myShopObj['住所'] = checkedAddress;
-        // businesstime
-        const businesstime: string = await doScrape(mySelector.pepperBusinesstimeSelector);
-        const checkedBusinesstime: string = checkEvaluation(businesstime);
-        logger.silly(checkedBusinesstime);
-        myShopObj['営業時間'] = checkedBusinesstime;
-        // shop counter
-        shopSuccessCounter++;
-        // push into array
-        finalResultArray.push(myShopObj);
-        // update target url
-        event.sender.send("statusUpdate", myShopObj);
+        await puppScraper.doGo(targetUrl);
+        // url exists
+        if (!await puppScraper.doCheckSelector(mySelector.pepperMainShopnameSelector)) {
+          // mini shopname1
+          const miniShopname1: string = await doScrape(mySelector.miniPepperSubShopnameSelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const checkedShopName: string = checkEvaluation(miniShopname1);
+          logger.silly(checkedShopName);
+          myShopObj['店名1'] = checkedShopName;
+          // mini address1
+          const miniAddress: string = await doScrape(mySelector.miniPepperShopAddressSelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const miniCheckedAddress: string = checkEvaluation(miniAddress);
+          logger.silly(miniCheckedAddress);
+          myShopObj['住所'] = miniCheckedAddress;
+          // mini businesstime
+          const miniBusinesstime: string = await doScrape(mySelector.miniPepperShopBusinessSelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const miniCcheckedBusinesstime: string = checkEvaluation(miniBusinesstime);
+          logger.silly(miniCcheckedBusinesstime);
+          myShopObj['営業時間'] = miniCcheckedBusinesstime;
+          // mini holiday
+          const miniHoliday: string = await doScrape(mySelector.miniPepperShopHolidaySelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const miniCheckedHoliday: string = checkEvaluation(miniHoliday);
+          logger.silly(miniCheckedHoliday);
+          myShopObj['定休日'] = miniCheckedHoliday;
+          // shop counter
+          shopSuccessCounter++;
+          // push into array
+          finalResultArray.push(myShopObj);
+          // update target url
+          event.sender.send("statusUpdate", myShopObj);
+
+        } else {
+          // shopname1
+          const shopname1: string = await doScrape(mySelector.pepperMainShopnameSelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const checkedShopName: string = checkEvaluation(shopname1);
+          logger.silly(checkedShopName);
+          myShopObj['店名1'] = checkedShopName;
+          // area
+          const area: string = await doScrape(mySelector.pepperAreaSelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const checkedArea: string = checkEvaluation(area);
+          logger.silly(checkedArea);
+          myShopObj['エリア'] = checkedArea;
+          // shopname2
+          const shopname2: string = await doScrape(mySelector.pepperSubShopnameSelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const checkedShopName2: string = checkEvaluation(shopname2);
+          logger.silly(checkedShopName2);
+          myShopObj['店名2'] = checkedShopName2;
+          // genre
+          const genre: string = await doScrape(mySelector.pepperGenreSelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const checkedGenre: string = checkEvaluation(genre);
+          logger.silly(checkedGenre);
+          myShopObj['ジャンル'] = checkedGenre;
+          // address1
+          const address: string = await doScrape(mySelector.pepperAddressSelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const checkedAddress: string = checkEvaluation(address);
+          logger.silly(checkedAddress);
+          myShopObj['住所'] = checkedAddress;
+          // businesstime
+          const businesstime: string = await doScrape(mySelector.pepperBusinesstimeSelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const checkedBusinesstime: string = checkEvaluation(businesstime);
+          logger.silly(checkedBusinesstime);
+          myShopObj['営業時間'] = checkedBusinesstime;
+          // holidy
+          const holidy: string = await doScrape(mySelector.pepperBusinesstimeSelector);
+          await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
+          const checkedHoliday: string = checkEvaluation(holidy);
+          logger.silly(checkedHoliday);
+          myShopObj['定休日'] = checkedHoliday;
+          // shop counter
+          shopSuccessCounter++;
+          // push into array
+          finalResultArray.push(myShopObj);
+          // update target url
+          event.sender.send("statusUpdate", myShopObj);
+        }
 
       } catch (err: unknown) {
         // shop counter
         shopFailCounter++;
-        // push into error url array
-        errorResultArray.push({ url: url[0] });
         // error
         logger.error(err);
+
       } finally {
         // send success counter
         event.sender.send("success", shopSuccessCounter);
@@ -358,15 +428,17 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
     // show finished message
     dialogMaker.showmessage("info", "scraping finished");
 
-  } catch (e: unknown) {
+  } catch (error: unknown) {
     // error
-    logger.error(e);
+    logger.error(error);
     // error
-    if (e instanceof Error) {
+    if (error instanceof Error) {
       // show error
-      dialogMaker.showmessage("error", `${e.message}`);
+      dialogMaker.showmessage("error", `${error.message}`);
     }
   } finally {
+    // goback to previous page
+    await puppScraper.doClose();
   }
 });
 
@@ -391,7 +463,7 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
     const prefNo: string = myPrefNos.prefs[pref];
     logger.silly("scrapeurl: db insert finished");
     // initialize scraper
-    await puppScraper.init();
+    await puppScraper.init(false);
     // goto top
     await puppScraper.doGo(`${myConst.pepper_BASE}/${prefNo}/lst/`);
     logger.debug(`scrapeurl: scraping area: ${myConst.pepper_BASE}/${prefNo}/`);
@@ -489,6 +561,37 @@ ipcMain.on("scrapeurl", async (event: any, arg: any) => {
       dialogMaker.showmessage("error", `${e.message}`);
     }
   }
+});
+
+// pause
+ipcMain.on("pause", async (_: any, __: any) => {
+  return new Promise(async (resolve, _) => {
+    try {
+      logger.info("ipc: pause mode");
+      // CSV file name
+      const nowtime: string = `${dir_desktop}\\${myConst.APP_NAME}_${new Date().toISOString().replace(/[^\d]/g, "").slice(0, 14)}.csv`;
+      // make csv
+      await csvMaker.makeCsvData(finalResultArray, myArrays.columns, nowtime);
+      logger.debug("CSV writing finished");
+      // show finished message
+      dialogMaker.showmessage("info", "scraping stopped");
+      // quit app
+      app.quit();
+
+    } catch (e: unknown) {
+      // error
+      logger.error(e);
+      // error
+      if (e instanceof Error) {
+        // show error
+        dialogMaker.showmessage("error", `${e.message}`);
+      }
+      return false;
+    } finally {
+      // goto top
+      await puppScraper.doClose();
+    }
+  });
 });
 
 // exit

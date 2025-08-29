@@ -1,5 +1,5 @@
 /*
- * tabelog.ts
+ * tabelog_partial.ts
  *
  * function：scraping electron app
  **/
@@ -10,12 +10,15 @@ import { myConst, myCategories, myProperties, myWindows, mySelector, myArrays } 
 // import modules
 import { BrowserWindow, app, ipcMain, Tray, Menu, nativeImage } from 'electron'; // electron
 import * as path from 'node:path'; // path
-import { Scrape } from './class/ElScrape0804'; // scraper
+import { Scrape } from './class/ElScrapeCore0810'; // scraper
 import Dialog from './class/ElDialog0721'; // dilog
 import Logger from './class/ElLogger'; // logger
 import CSV from './class/ElCsv0414'; // csv
+
 /// Variables
 let globalRootPath: string; // root path
+// init counter
+let globalUrlSuccessCounter: number = 0;
 // production
 if (!myConst.DEV_FLG) {
   globalRootPath = path.join(path.resolve(), 'resources')
@@ -66,7 +69,6 @@ const createWindow = (): void => {
     // ready
     mainWindow.once('ready-to-show', () => {
       if (!app.isPackaged) {
-        // dev mode
         //mainWindow.webContents.openDevTools();
       }
     });
@@ -201,6 +203,12 @@ ipcMain.on('page', async (_: any, arg: any) => {
         url = 'shop.html';
         break;
 
+      // test page
+      case 'test_page':
+        // set url
+        url = 'test.html';
+        break;
+
       default:
         // clear url
         url = '';
@@ -279,7 +287,7 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
     // url array
     const urlArray: any[] = arg.record.flat();
     // initialize scraper
-    await puppScraper.init(true);
+    await puppScraper.init();
     // update total
     event.sender.send('shoptotal', totalCounter);
 
@@ -426,14 +434,26 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
 ipcMain.on('scrapeurl', async (event: any, arg: any) => {
   try {
     logger.info('ipc: scrape mode');
-    // init counter
-    let urlSuccessCounter: number = 0;
     // final Csv Array
     let finalCsvArray: any = [];
+    // reset
+    globalUrlSuccessCounter = 0;
+    // area index
+    const tmpAreaIndex: number = arg.area ?? 1;
+    // city index
+    const tmpCityIndex: number = arg.city ?? 1;
+    // town index
+    const tmpTownIndex: number = arg.town ?? 1;
     // start area index
-    const startAreaindex: number = Number(arg.area);
+    const startAreaindex: number = Number(tmpAreaIndex);
+    // start city index
+    const startCityindex: number = Number(tmpCityIndex);
+    // start town index
+    const startTownindex: number = Number(tmpTownIndex);
+    // original pref index
+    const tmpIndex: number = arg.index ?? 1;
     // pref index
-    const prefindex: number = Number(arg.index);
+    const prefindex: number = Number(tmpIndex);
     // pref
     const pref: string = String(arg.pref);
     logger.debug('scrapeurl: db insert finished');
@@ -441,241 +461,139 @@ ipcMain.on('scrapeurl', async (event: any, arg: any) => {
     const prefPadded: string = String(prefindex).padStart(2, '0');
     logger.debug(`scrapeurl: ${myConst.TABELOG_BASE}${pref}/`);
     // initialize scraper
-    await puppScraper.init(false);
+    await puppScraper.init();
+    // zero
+    const areaPadded: string = String(startAreaindex).padStart(2, '0');
+    // city number
+    const cityPadded: string = String(startCityindex).padStart(2, '0');
+    // town number
+    const townPadded: string = String(startTownindex).padStart(2, '0');
+    // city url
+    const cityUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${areaPadded}/A${prefPadded}${cityPadded}${townPadded}/`;
+    logger.silly(`cityUrl: ${cityUrl}`);
+    // update target url
+    event.sender.send('statusUpdate', cityUrl);
     // goto top
-    await puppScraper.doGo(`${myConst.TABELOG_BASE}${pref}/`);
-    logger.debug(`scrapeurl: scraping area: ${myConst.TABELOG_BASE}${pref}/`);
+    await puppScraper.doGo(cityUrl);
+    logger.debug(`scrapeurl: ${cityUrl}`);
     // wait for datalist
     await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
-    // url exists
-    if (!await puppScraper.doCheckSelector(mySelector.tabeLogTotalSelector)) {
-      throw new Error('scrapeurl: scrape area: no key data');
-    }
-    logger.debug('scrapeurl: url exists');
-    // total tag
-    const tmpPreftotal: any = await puppScraper.doMultiEval(
+    // total
+    const tmpCityTotal: any = await puppScraper.doMultiEval(
       mySelector.tabeLogTotalSelector,
       'innerHTML'
     );
-    // tag removal
-    const tmpPrefTotalNum: string = tmpPreftotal[0].replace(/<[^>]*>/g, '');
+    // total number
+    const tmpCityTotalNum: string = tmpCityTotal[0].replace(/<[^>]*>/g, '');
     // totalCounter
-    const totalPrefCounter: number = Number(tmpPrefTotalNum);
-    // pref total
-    event.sender.send('urltotal', totalPrefCounter);
-    logger.debug(`scrapeurl: prefecture total is ${totalPrefCounter} urls`);
-    // numbers for loop
-    const areaNumberArray: number[] = makeNumberRange(startAreaindex, 31);
+    const totalCityCounter: number = Number(tmpCityTotalNum);
+    logger.debug(`scrapeurl: city total is ${totalCityCounter}`);
+    // page counter
+    const cityPageCounter: number = Math.ceil(totalCityCounter / 20);
+    // update target url
+    event.sender.send('totalUpdate', cityPageCounter);
+    // under limit
+    if (totalCityCounter <= myProperties.PAGE_LIMIT) {
+      logger.debug(`scrapeurl: total is ${totalCityCounter}`);
+      // final url
+      const finalCityUrl: any = await doScrapeUrl(cityUrl + 'rstLst', mySelector.tabeLogUrlSelector, 'city', cityPageCounter, event);
+      logger.debug('scrapeurl result: ');
+      // push into array
+      finalCsvArray.push(finalCityUrl);
 
-    // area loop
-    for (let areaNum of areaNumberArray) {
-      try {
-        // zero
-        const zeroPadded: string = String(areaNum).padStart(2, '0');
-        // area url
-        const areaUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/`;
-        logger.silly(`areaUrl: ${areaUrl}`);
-        // update target url
-        event.sender.send('statusUpdate', areaUrl);
-        // goto top
-        await puppScraper.doGo(areaUrl);
-        logger.debug(`scrapeurl: ${areaUrl}`);
-        // wait for datalist
-        await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
-        // url exists
-        if (!await puppScraper.doCheckSelector(mySelector.tabeLogTotalSelector)) {
-          logger.debug('scrapeurl: area continue');
-          continue;
-        }
-        // total
-        const tmpAreaTotal: any = await puppScraper.doMultiEval(
-          mySelector.tabeLogTotalSelector,
-          'innerHTML'
-        );
-        // total number
-        const tmpAreaTotalNum: string = tmpAreaTotal[0].replace(/<[^>]*>/g, '');
-        // totalCounter
-        const totalAreaCounter: number = Number(tmpAreaTotalNum);
-        logger.debug(`scrapeurl: area total is ${totalAreaCounter}`);
-
-        // under limit
-        if (totalAreaCounter <= myProperties.PAGE_LIMIT) {
-          logger.debug(`scrapeurl: total is ${totalAreaCounter}`);
-          // page counter
-          const areaPageCounter: number = Math.ceil(totalAreaCounter / 20);
-          // final url
-          const finalAreaUrl: any = await doScrapeUrl(areaUrl + 'rstLst', mySelector.tabeLogUrlSelector, 'area', areaPageCounter, event);
-          logger.debug('scrapeurl: ');
-          // push into array
-          finalCsvArray.push(finalAreaUrl);
-          // countup
-          urlSuccessCounter += totalAreaCounter;
-          // send success counter
-          event.sender.send("urlsuccess", urlSuccessCounter);
-          continue;
-        }
-        logger.debug(`scrapeurl: area total exceed ${myProperties.PAGE_LIMIT}`);
-        // numbers for loop
-        const cityNumberArray: number[] = makeNumberRange(1, 60);
-
-        // city loop
-        for (let cityNum of cityNumberArray) {
-          try {
-            // city number
-            const cityPadded: string = String(cityNum).padStart(2, '0');
-            // city url
-            const cityUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/`;
-            logger.silly(`cityUrl: ${cityUrl}`);
-            // update target url
-            event.sender.send('statusUpdate', cityUrl);
-            // goto top
-            await puppScraper.doGo(cityUrl);
-            logger.debug(`scrapeurl: ${cityUrl}`);
-            // wait for datalist
-            await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
-            // url exists
-            if (!await puppScraper.doCheckSelector(mySelector.tabeLogTotalSelector)) {
-              logger.debug('scrapeurl: no city selector');
-              break;
-            }
-            // total
-            const tmpCityTotal: any = await puppScraper.doMultiEval(
-              mySelector.tabeLogTotalSelector,
-              'innerHTML'
-            );
-            // total number
-            const tmpCityTotalNum: string = tmpCityTotal[0].replace(/<[^>]*>/g, '');
-            // totalCounter
-            const totalCityCounter: number = Number(tmpCityTotalNum);
-            logger.debug(`scrapeurl: city total is ${totalCityCounter}`);
-            // page counter
-            const cityPageCounter: number = Math.ceil(totalCityCounter / 20);
-            // under limit
-            if (totalCityCounter <= myProperties.PAGE_LIMIT) {
-              logger.debug(`scrapeurl: total is ${totalCityCounter}`);
-              // final url
-              const finalCityUrl: any = await doScrapeUrl(cityUrl + 'rstLst', mySelector.tabeLogUrlSelector, 'city', cityPageCounter, event);
-              logger.debug('scrapeurl result: ');
-              // push into array
-              finalCsvArray.push(finalCityUrl);
-              logger.silly(`city: ${finalCityUrl}`);
-              // countup
-              urlSuccessCounter += totalCityCounter;
-              // send success counter
-              event.sender.send("urlsuccess", urlSuccessCounter);
-              continue;
-            }
-            logger.debug(`scrapeurl: city total exceed ${myProperties.PAGE_LIMIT}`);
-
-            // category loop
-            for (let i = 0; i < myCategories.CATEGORIES.length; i++) {
-              try {
-                // category url
-                const categoryUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${myCategories.CATEGORIES[i]}`;
-                // update target url
-                event.sender.send('statusUpdate', categoryUrl);
-                logger.silly(`categoryUrl: ${categoryUrl}`);
-                // goto top
-                await puppScraper.doGo(categoryUrl);
-                logger.debug(`scrapeurl: category: ${categoryUrl}`);
-                // wait for datalist
-                await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
-                // url exists
-                if (!await puppScraper.doCheckSelector(mySelector.tabeLogGenreTotalSelector)) {
-                  logger.debug('scrapeurl: no category selector');
-                  continue;
-                }
-                logger.debug(`scrapeurl: category get total started`);
-                // total
-                const tmpCategoryTotal: any = await puppScraper.doMultiEval(
-                  mySelector.tabeLogGenreTotalSelector,
-                  'innerHTML',
-                );
-                // total number
-                const tmpCategoriesTotalNum: string = tmpCategoryTotal[0].replace(/<[^>]*>/g, '');
-                // totalCounter
-                const totalCategoriesCounter: number = Number(tmpCategoriesTotalNum);
-                // page counter
-                const categoryPageCounter: number = Math.ceil(totalCategoriesCounter / 20);
-                // under limit 
-                if (totalCategoriesCounter <= myProperties.PAGE_LIMIT) {
-                  // final category url
-                  const finalCategoryUrl: any = await doScrapeUrl(categoryUrl, mySelector.tabeLogCategoryUrlSelector, 'category', categoryPageCounter, event);
-                  // set to csv array
-                  finalCsvArray.push(finalCategoryUrl);
-                  logger.silly(`category: ${finalCategoryUrl}`);
-                  // countup
-                  urlSuccessCounter += totalCategoriesCounter;
-                  // send success counter
-                  event.sender.send("urlsuccess", urlSuccessCounter);
-                  continue;
-                }
-                logger.debug('scrapeurl: category total exceed 1200');
-
-                // genre loop
-                for (let j = 0; j < myCategories.GENRES.length; j++) {
-                  try {
-                    // genre url
-                    const genreUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${zeroPadded}/A${prefPadded}${zeroPadded}${cityPadded}/rstLst/${myCategories.GENRES[j]}`;
-                    // update target url
-                    event.sender.send('statusUpdate', genreUrl);
-                    logger.silly(`genreurl: ${genreUrl}`);
-                    // goto top
-                    await puppScraper.doGo(genreUrl);
-                    logger.debug(`scrapeurl: genre: ${genreUrl}`);
-                    // wait for datalist
-                    await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
-                    // url exists
-                    if (!await puppScraper.doCheckSelector(mySelector.tabeLogGenreTotalSelector)) {
-                      logger.debug('scrapeurl: no genre selector');
-                      continue;
-                    }
-                    logger.debug(`scrapeurl: genre get total started`);
-                    // total
-                    const tmpGenreTotal: any = await puppScraper.doMultiEval(
-                      mySelector.tabeLogGenreTotalSelector,
-                      'innerHTML',
-                    );
-                    // total number
-                    const tmpGenreTotalNum: string = tmpGenreTotal[0].replace(/<[^>]*>/g, '');
-                    // totalCounter
-                    const totalGenreCounter: number = Number(tmpGenreTotalNum);
-                    // page counter
-                    const genrePageCounter: number = Math.ceil(totalGenreCounter / 20);
-                    // under limit 
-                    if (totalGenreCounter <= myProperties.PAGE_LIMIT) {
-                      // final genre url
-                      const finalGenreUrl: any = await doScrapeUrl(genreUrl, mySelector.tabeLogCategoryUrlSelector, 'genre', genrePageCounter, event);
-                      // set to csv array
-                      finalCsvArray.push(finalGenreUrl);
-                      logger.silly(`genre: ${finalGenreUrl}`);
-                      // countup
-                      urlSuccessCounter += totalGenreCounter;
-                      // send success counter
-                      event.sender.send("urlsuccess", urlSuccessCounter);
-                    } else {
-                      throw new Error('scrapeurl: genre total exceed 1200');
-                    }
-
-                  } catch (e: unknown) {
-                    // error
-                    logger.error(e);
-                  }
-                }
-
-              } catch (e: unknown) {
-                // error
-                logger.error(e);
-              }
-            }
-          } catch (e: unknown) {
-            // error
-            logger.error(e);
+    } else {
+      logger.debug(`scrapeurl: city total exceed ${myProperties.PAGE_LIMIT}`);
+      // category loop
+      for (let i = 0; i < myCategories.CATEGORIES.length; i++) {
+        try {
+          // category url
+          const categoryUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${areaPadded}/A${prefPadded}${cityPadded}${townPadded}/rstLst/${myCategories.CATEGORIES[i]}`;
+          // update target url
+          event.sender.send('statusUpdate', categoryUrl);
+          logger.silly(`categoryUrl: ${categoryUrl}`);
+          // goto top
+          await puppScraper.doGo(categoryUrl);
+          logger.debug(`scrapeurl: category: ${categoryUrl}`);
+          // wait for datalist
+          await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
+          // url exists
+          if (!await puppScraper.doCheckSelector(mySelector.tabeLogGenreTotalSelector)) {
+            logger.debug('scrapeurl: no category selector');
+            continue;
           }
+          logger.debug(`scrapeurl: category get total started`);
+          // total
+          const tmpCategoryTotal: any = await puppScraper.doMultiEval(
+            mySelector.tabeLogGenreTotalSelector,
+            'innerHTML',
+          );
+          // total number
+          const tmpCategoriesTotalNum: string = tmpCategoryTotal[0].replace(/<[^>]*>/g, '');
+          // totalCounter
+          const totalCategoriesCounter: number = Number(tmpCategoriesTotalNum);
+          // page counter
+          const categoryPageCounter: number = Math.ceil(totalCategoriesCounter / 20);
+          // under limit 
+          if (totalCategoriesCounter <= myProperties.PAGE_LIMIT) {
+            // final category url
+            const finalCategoryUrl: any = await doScrapeUrl(categoryUrl, mySelector.tabeLogCategoryUrlSelector, 'category', categoryPageCounter, event);
+            // set to csv array
+            finalCsvArray.push(finalCategoryUrl);
+            logger.silly(`category: ${finalCategoryUrl}`);
+            continue;
+          }
+          logger.debug('scrapeurl: category total exceed 1200');
+
+          // genre loop
+          for (let j = 0; j < myCategories.GENRES.length; j++) {
+            try {
+              // genre url
+              const genreUrl: string = `${myConst.TABELOG_BASE}${pref}/A${prefPadded}${areaPadded}/A${prefPadded}${cityPadded}${townPadded}/rstLst/${myCategories.GENRES[j]}`;
+              // update target url
+              event.sender.send('statusUpdate', genreUrl);
+              logger.silly(`genreurl: ${genreUrl}`);
+              // goto top
+              await puppScraper.doGo(genreUrl);
+              logger.debug(`scrapeurl: genre: ${genreUrl}`);
+              // wait for datalist
+              await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
+              // url exists
+              if (!await puppScraper.doCheckSelector(mySelector.tabeLogGenreTotalSelector)) {
+                logger.debug('scrapeurl: no genre selector');
+                continue;
+              }
+              logger.debug(`scrapeurl: genre get total started`);
+              // total
+              const tmpGenreTotal: any = await puppScraper.doMultiEval(
+                mySelector.tabeLogGenreTotalSelector,
+                'innerHTML',
+              );
+              // total number
+              const tmpGenreTotalNum: string = tmpGenreTotal[0].replace(/<[^>]*>/g, '');
+              // totalCounter
+              const totalGenreCounter: number = Number(tmpGenreTotalNum);
+              // page counter
+              const genrePageCounter: number = Math.ceil(totalGenreCounter / 20);
+              // under limit 
+              if (totalGenreCounter <= myProperties.PAGE_LIMIT) {
+                // final genre url
+                const finalGenreUrl: any = await doScrapeUrl(genreUrl, mySelector.tabeLogCategoryUrlSelector, 'genre', genrePageCounter, event);
+                // set to csv array
+                finalCsvArray.push(finalGenreUrl);
+                logger.silly(`genre: ${finalGenreUrl}`);
+
+              } else {
+                throw new Error('scrapeurl: genre total exceed 1200');
+              }
+            } catch (e: unknown) {
+              // error
+              logger.error(e);
+            }
+          }
+        } catch (e: unknown) {
+          // error
+          logger.error(e);
         }
-      } catch (e: unknown) {
-        // error
-        logger.error(e);
       }
     }
     // nowtime
@@ -720,6 +638,9 @@ ipcMain.on('exit', async () => {
   }
 });
 
+/*
+ Functions
+*/
 // do scraping
 const doScrape = async (selector: string): Promise<string> => {
   return new Promise(async (resolve, _) => {
@@ -764,10 +685,11 @@ const doScrapeUrl = async (url: string, selector: string, mode: string, limit: n
       let finalArray: any[] = [];
       // get url list
       const urls: string[] = [...Array(Math.ceil(limit)).keys()].map(i => `${url}/${++i}`);
+
       // 収集ループ
-      for (const [index, url] of Object.entries(urls)) {
+      for (const url of urls) {
         try {
-          logger.debug(`${mode}: ${index}`);
+          logger.debug(`${mode}: ${url}`);
           // goto page
           await puppScraper.doGo(url);
           // wait for 1 sec
@@ -798,6 +720,10 @@ const doScrapeUrl = async (url: string, selector: string, mode: string, limit: n
           logger.debug('scrapeurl: no selector');
           // result
           resolve(finalArray);
+        } finally {
+          globalUrlSuccessCounter++;
+          // update target url
+          event.sender.send('success', globalUrlSuccessCounter);
         }
       }
       logger.debug('scrapeurl: scrape url end');
@@ -816,11 +742,9 @@ const doScrapeUrl = async (url: string, selector: string, mode: string, limit: n
   });
 };
 
-// number array
-const makeNumberRange: any = (start: number, end: number) => [...new Array(end - start).keys()].map(n => n + start);
-
 // empty evaluation
 const checkEvaluation = (value: string): any => {
+  logger.silly('checkEvaluation: started');
   // tag regexp
   const regex: RegExp = new RegExp('(<([^>]+)>)', 'gi');
   // isEmpty
@@ -836,4 +760,7 @@ const checkEvaluation = (value: string): any => {
       return value;
     }
   }
-}
+};
+
+// number array
+const makeNumberRange: any = (start: number, end: number) => [...new Array(end - start).keys()].map(n => n + start);

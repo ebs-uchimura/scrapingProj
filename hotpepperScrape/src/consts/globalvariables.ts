@@ -11,7 +11,7 @@ export namespace myConst {
   export const COMPANY_NAME: string = 'Ebisudo';
   export const CSV_ENCODING: string = "SJIS";
   export const pepper_BASE: string = "https://hotpepper.jp/";
-  export const LOG_LEVEL: string = 'info';
+  export const LOG_LEVEL: string = 'silly';
 }
 
 export namespace myWindows {
@@ -20,8 +20,9 @@ export namespace myWindows {
 }
 
 export namespace myProperties {
-  export const WAIT_SECOND: number = 100;
-  export const PAGE_LIMIT: number = 1200;
+  export const WAIT_MILLSECOND: number = 100;
+  export const WAIT_SECOND: number = 1000;
+  export const PAGE_LIMIT: number = 1000;
 }
 
 /** selector */
@@ -43,10 +44,10 @@ export namespace mySelector {
     "#shopHeaderWrapper > div > div.shopHeaderContents.pr > div.shopHeaderContentsInner > div.shopHeaderContentsInfo > div.shopHeaderLogoTitleWrap > div > div.shopNameBlock > h1";
   // pepper genre selector
   export const pepperGenreSelector: string =
-    "#shopHeaderWrapper > div > div.shopHeaderContents.pr > div.shopHeaderContentsInner > div.shopHeaderContentsInfo > div.shopInfoInnerSectionWrap > ul > li:nth-child(2) > dl > dd:nth-child(2) > p > a"
+    "#shopHeaderWrapper > div > div.shopHeaderContents.pr > div.shopHeaderContentsInner > div.shopHeaderContentsInfo > div.shopInfoInnerSectionWrap > ul > li:nth-child(2) > dl > dd:nth-child(2) > p > a";
   // pepper area selector
   export const pepperAreaSelector: string =
-    "#shopHeaderWrapper > div > div.shopHeaderContents.pr > div.shopHeaderContentsInner > div.shopHeaderContentsInfo > div.shopInfoInnerSectionWrap > ul > li:nth-child(3) > dl > dd:nth-child(2) > p > a"
+    "#shopHeaderWrapper > div > div.shopHeaderContents.pr > div.shopHeaderContentsInner > div.shopHeaderContentsInfo > div.shopInfoInnerSectionWrap > ul > li:nth-child(3) > dl > dd:nth-child(2) > p > a";
   // pepper mainshopname selector
   export const pepperSubShopnameSelector: string =
     "#mainContentsWrapSecond > div.shopInner.meiryoFont > div:nth-child(2) > table > tbody > tr:nth-child(1) > td";
@@ -64,11 +65,36 @@ export namespace mySelector {
   // pepper seatnum
   export const pepperSeatnumSelector: string =
     "#mainContentsWrapSecond > div.shopInner.meiryoFont > div:nth-child(4) > table > tbody > tr:nth-child(1) > td";
+  // pepper holiday
+  export const pepperHolidySelector: string =
+    "#mainContentsWrapSecond > div.shopInner.meiryoFont > div:nth-child(4) > table > tbody > tr:nth-child(9) > td > p";
+  // mini mode shopname1
+  export const miniPepperMainShopNameSelector: string =
+    "#shopHeaderWrapper > div.shopHeaderContents > div > h1";
+  // mini mode genre
+  export const miniPepperGenreSelector: string =
+    "#shopHeaderWrapper > div.shopHeaderContents > div > ul > li:nth-child(1) > dl > dd > p > a";
+  // mini mode shopname2
+  export const miniPepperSubShopnameSelector: string =
+    "body > div.PSI01010 > div.container.cf > div.shopContainer.cf > main > div > section > div:nth-child(3) > section > table > tbody > tr:nth-child(1) > td";
+  // mini mode address
+  export const miniPepperShopAddressSelector: string =
+    "body > div.PSI01010 > div.container.cf > div.shopContainer.cf > main > div > section > div:nth-child(3) > section > table > tbody > tr:nth-child(2) > td";
+  // mini mode business 
+  export const miniPepperShopBusinessSelector: string =
+    "body > div.PSI01010 > div.container.cf > div.shopContainer.cf > main > div > section:nth-child(1) > div:nth-child(3) > section > table > tbody > tr:nth-child(6) > td";
+  // mini mode holiday
+  export const miniPepperShopHolidaySelector: string =
+    "body > div.PSI01010 > div.container.cf > div.shopContainer.cf > main > div > section:nth-child(1) > div:nth-child(3) > section > table > tbody > tr:nth-child(7) > td";
+  // mini mode budget
+  export const miniPepperShopBudgetSelector: string =
+    "body > div.PSI01010 > div.container.cf > div.shopContainer.cf > main > div > section:nth-child(1) > div:nth-child(3) > section > table > tbody > tr:nth-child(8) > td";
 }
 
 /** columns */
 export namespace myArrays {
   export const columns: string[] = [
+    "URL", // url
     "電話番号", // 電話
     "店名1", // 店名1
     "エリア", // エリア
@@ -77,6 +103,7 @@ export namespace myArrays {
     "住所", // 住所
     "アクセス", // アクセス
     "営業時間", // 営業時間
+    "定休日", // 定休日
   ];
 }
 

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+    <head>
+        <meta charset="utf-8" />
+        <title>食べログスクレイピングツール（補助版）</title>
+        <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+        <link rel="stylesheet" href="css/index.css">
+        <link rel="stylesheet" href="css/button.css">
+    </head>
+
+    <body>
+        <h1>食べログスクレイピングツール（補助版）</h1>
+        <div class="wrapper">
+            <div class="button_area">
+                <div class="operation_area">
+                    <h3>CSV読込</h3>
+                    <div><button class="button-g button-wide" value="regist" onclick="readCSV();">CSV読込</button></div>
+                    <div id="csvfilepath"></div>
+                </div>
+                <div class="operation_area">
+                    <h3>スクレイピング</h3>
+                    <div><button class="button-g button-wide button-4" value="edit" onclick="gotoScrape();">開始</button>
+                    </div>
+                </div>
+                <div class="progressarea">
+                    <div>成功:<span id="success"></span>/<span id="successtotal"></span></div>
+                    <div>失敗:<span id="fail"></span>/<span id="failtotal"></span>
+                    </div>
+                </div>
+                <div class="operation_area">
+                    <h3>ステータス</h3>
+                    <div id="scrapingstatus"></div>
+                </div>
+                <div class="operation_area">
+                    <button type="button" id="topbutton" class="button-6 button-g button-wide" role="button"
+                        onclick="transfer('top_page');">トップへ戻る</button>
+                </div>
+                <div>
+                    <button class="button-g button-3 button-wide" value="exit" onclick="exitApp();">終了</button>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <p><small>&copy; 2024 Satsuma Ebisudo All Rights Reserved. </small></p>
+        </footer>
+        <script>
+            /// dom
+            // CSV file dom
+            const csvfileDom = document.getElementById('csvfilepath');
+            // scrapingstatus dom
+            const scrapingstatusDom = document.getElementById('scrapingstatus');
+            // success dom
+            const successDom = document.getElementById('success');
+            // fail dom
+            const failDom = document.getElementById('fail');
+            // successtotal dom
+            const successtotalDom = document.getElementById('successtotal');
+            // failtotal dom
+            const failtotalDom = document.getElementById('failtotal');
+            // total counter
+            window.api.on('shoptotal', arg => {
+                // success
+                successtotalDom.innerHTML = arg;
+                // fail
+                failtotalDom.innerHTML = arg;
+            });
+            // success counter
+            window.api.on('shopsuccess', arg => {
+                console.log('success: ' + arg);
+                // success
+                successDom.innerHTML = arg;
+            });
+            // fail counter
+            window.api.on('shopfail', arg => {
+                console.log('fail: ' + arg);
+                // fail
+                failDom.innerHTML = arg;
+            });
+            // shop info
+            window.api.on('shopinfoCsvlist', arg => {
+                try {
+                    // convert to JSON
+                    const serializedArray = JSON.stringify(arg);
+                    // save localStorage
+                    localStorage.setItem('shopinfoArray', serializedArray);
+                    // file path
+                    csvfileDom.innerHTML = arg.filename;
+                } catch (e) {
+                    // error
+                    console.log(e);
+                }
+            });
+            // status Update
+            window.api.on('statusUpdate', arg => {
+                try {
+                    // status Update
+                    scrapingstatusDom.innerHTML = `
+          scraping: ${arg}`;
+                } catch (e) {
+                    // error
+                    console.log(e);
+                }
+            });
+            // read CSV
+            const readCSV = () => {
+                try {
+                    // read CSV
+                    window.api.send('csv', '');
+                } catch (e) {
+                    // error
+                    console.log(e);
+                }
+            }
+            // start scraping
+            const gotoScrape = () => {
+                try {
+                    // initialize form
+                    successDom.innerHTML = '';
+                    failDom.innerHTML = '';
+                    successtotalDom.innerHTML = '';
+                    failtotalDom.innerHTML = '';
+                    // shop ul list
+                    const serializedArray = JSON.parse(localStorage.getItem(
+                        'shopinfoArray'));
+                    // start scraping
+                    window.api.send('scrape', serializedArray);
+                } catch (e) {
+                    // error
+                    console.log(e);
+                }
+            }
+            // exit App
+            const exitApp = () => {
+                try {
+                    // exit App
+                    window.api.send('exit');
+                } catch (e) {
+                    // error
+                    console.log(e);
+                }
+            }
+            // page transfer
+            const transfer = channel => {
+                try {
+                    // page transfer
+                    window.api.send('page', channel);
+                } catch (e) {
+                    // error
+                    console.log(e);
+                }
+            }
+        </script>
+    </body>
+
+</html>
