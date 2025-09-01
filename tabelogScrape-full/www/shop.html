@@ -20,8 +20,12 @@
         </div>
         <div class="operation_area">
           <h3>スクレイピング</h3>
+          <h4>開始位置</h4>
+          <div>
+            <input type="number" id="tentacles" name="tentacles" min="1" max="100000">
+          </div>
           <div><button class="button-g button-wide button-4" value="edit" onclick="gotoScrape();">開始</button></div>
-          <div><button class="button-g button-wide button-4" value="edit" onclick="pauseScrape();">中断</button></div>
+          <div><button class="button-g button-wide button-10" value="edit" onclick="pauseScrape();">中断</button></div>
         </div>
         <div class="progressarea">
           <div>成功:<span id="success"></span>/<span id="successtotal"></span></div>
@@ -49,6 +53,8 @@
       /// dom
       // CSV file dom
       const csvfileDom = document.getElementById('csvfilepath');
+      // tentacles dom
+      const tentaclesDom = document.getElementById('tentacles');
       // scrapingstatus dom
       const scrapingstatusDom = document.getElementById('scrapingstatus');
       // success dom
@@ -131,10 +137,17 @@
           failDom.innerHTML = '';
           successtotalDom.innerHTML = '';
           failtotalDom.innerHTML = '';
+          // start position
+          const startPos = tentaclesDom.value;
           // shop ul list
           const serializedArray = JSON.parse(localStorage.getItem('shopinfoArray'));
+          // send obj
+          const sendObj = {
+            pos: startPos,
+            urls: serializedArray,
+          }
           // start scraping
-          window.api.send('scrape', serializedArray);
+          window.api.send('scrape', sendObj);
 
         } catch (e) {
           // error

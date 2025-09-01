@@ -1,7 +1,7 @@
 {
   "name": "tabelog-scrape",
   "productName": "tabelogscrape",
-  "version": "1.3.10",
+  "version": "1.4.0",
   "description": "Electron application for scraping",
   "main": "build/tabelog.js",
   "scripts": {

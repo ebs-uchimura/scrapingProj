@@ -18,7 +18,7 @@ import CSV from './class/ElCsv0414'; // csv
 let globalRootPath: string; // root path
 // production
 if (!myConst.DEV_FLG) {
-  globalRootPath = path.join(path.resolve(), 'resources')
+  globalRootPath = path.join(path.resolve(), 'resources');
   // development
 } else {
   globalRootPath = path.join(__dirname, '..');
@@ -69,7 +69,7 @@ const createWindow = (): void => {
     mainWindow.once('ready-to-show', () => {
       if (!app.isPackaged) {
         // dev mode
-        //mainWindow.webContents.openDevTools();
+        mainWindow.webContents.openDevTools();
       }
     });
 
@@ -273,21 +273,27 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
     // shop fail counter
     let shopFailCounter: number = 0;
     // total counter
-    let totalCounter: number = arg.record.length;
-    // error array
-    let errorResultArray: any[] = [];
+    let totalCounter: number = arg.urls.record.length;
+    // start point
+    const tmpPosition: any = arg.pos ?? 0;
+    // start point
+    const startPosition: number = Number(tmpPosition);
     // url array
-    const urlArray: any[] = arg.record.flat();
+    const urlArray: any[] = arg.urls.record.flat();
     // init array
     finalResultArray = [];
     // initialize scraper
     await puppScraper.init(true);
     // update total
-    event.sender.send('shoptotal', totalCounter);
+    event.sender.send('shoptotal', totalCounter - startPosition);
+    // partnumber
+    const totalNumber: number[] = makeNumberRange(startPosition, totalCounter);
 
     // scrape pages
-    for (let url of urlArray) {
+    for (let nm of totalNumber) {
       try {
+        // target url
+        const targetUrl: string = urlArray[nm];
         // shop data
         let myShopObj: any = {
           url: '', // url
@@ -307,14 +313,14 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
           shopphone2: '', // shopphone2
         };
         // goto top
-        await puppScraper.doGo(url);
-        logger.debug(`app: scraping ${url}`);
+        await puppScraper.doGo(targetUrl);
+        logger.debug(`app: scraping ${targetUrl}`);
         // update target url
-        event.sender.send('statusUpdate', url);
+        event.sender.send('statusUpdate', targetUrl);
         // goto top
         await puppScraper.doWaitFor(myProperties.WAIT_SECOND);
         // url
-        myShopObj['url'] = url;
+        myShopObj['url'] = targetUrl;
         // shopname
         const shopname: string = await doScrape(mySelector.tabeLogMainShopnameSelector);
         await puppScraper.doWaitFor(myProperties.WAIT_MILLSECOND);
@@ -390,8 +396,6 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
       } catch (err: unknown) {
         // shop counter
         shopFailCounter++;
-        // push into error url array
-        errorResultArray.push({ url: url });
         // error
         logger.error(err);
 
