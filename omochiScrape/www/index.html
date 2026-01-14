@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <title>omochiスクレイピングツール</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/button.css">
+</head>
+
+<body>
+  <h1>omochiURL取得</h1>
+  <div class="wrapper">
+    <div class="operation_area">
+      <h4>対象URL</h4>
+      <div>
+        <input type="text" id="url" name="url" size="50">
+      </div><br>
+      <div class="button_area">
+        <button class="button-g button-8 button-wide" onclick="gotoScrape();">開始</button>
+      </div>
+    </div>
+    <button class="button-g button-1 button-wide" value="exit" onclick="exitApp();">終了</button>
+  </div>
+  <footer>
+    <p>
+      <small>&copy; 2025 Satsuma Ebisudo All Rights Reserved.</small>
+    </p>
+  </footer>
+
+  <script>
+    // start scraping
+    const gotoScrape = () => {
+      try {
+        // target url
+        const urlTxt = document.getElementById('url');
+        // start scraping
+        window.api.send("scrapeurl", urlTxt.value);
+
+      } catch (e) {
+        // error
+        console.log(e);
+      }
+    }
+
+    // exit App
+    const exitApp = () => {
+      try {
+        // exit App
+        window.api.send("exit");
+
+      } catch (e) {
+        // error
+        console.log(e);
+      }
+    }
+  </script>
+</body>
+
+</html>

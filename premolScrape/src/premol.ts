@@ -4,27 +4,40 @@
  * function：scraping electron app
  **/
 
+// namespace
+import { myConst, myWindows, mySelector, myArrays } from './consts/globalvariables';
+
 // import modules
-import { BrowserWindow, app, ipcMain, dialog, Tray, Menu, nativeImage } from 'electron'; // electron
-import * as path from 'path'; // path
-import { Scrape } from './class/Scrape0119'; // scraper
-import Dialog from "./class/ElectronDialog0118"; // logger
-import ELLogger from './class/Logger0928'; // logger
-import CSV from './class/ElectronCsv0119'; // csv
+import { BrowserWindow, app, ipcMain, Tray, Menu, nativeImage } from 'electron'; // electron
+import * as path from 'node:path'; // path
+import { Scrape } from './class/ElScrapeCore0914'; // scraper
+import Dialog from "./class/ElDialog0721"; // logger
+import ELLogger from './class/ElLogger'; // logger
+import CSV from './class/ElCsv0414'; // csv
+
+/// Variables
+let globalRootPath: string; // root path
+// production
+if (!myConst.DEV_FLG) {
+  globalRootPath = path.join(path.resolve(), 'resources');
+  // development
+} else {
+  globalRootPath = path.join(__dirname, '..');
+}
 
 /// constants
 const CSV_ENCODING: string = 'SJIS'; // csv encoding
 const PREMOL_URL: string = 'https://gourmet.suntory.co.jp/search/f__'; // prefecture URL
 
 /// config
-// csv
-const csvMaker: CSV = new CSV(CSV_ENCODING);
 // logger
-const logger: ELLogger = new ELLogger('../../logs');
+const logger: ELLogger = new ELLogger(myConst.COMPANY_NAME, myConst.APP_NAME, myConst.LOG_LEVEL);
+// csv
+const csvMaker: CSV = new CSV(CSV_ENCODING, logger);
 // dialog
-const dialogMaker: Dialog = new Dialog();
+const dialogMaker: Dialog = new Dialog(logger);
 // puppeteer scraper
-const puppScraper: Scrape = new Scrape();
+const puppScraper: Scrape = new Scrape(logger);
 // desktop path
 const dir_home = process.env[process.platform == "win32" ? "USERPROFILE" : "HOME"] ?? '';
 const dir_desktop = path.join(dir_home, "Desktop");
@@ -32,19 +45,6 @@ const dir_desktop = path.join(dir_home, "Desktop");
 // init gloabal array
 let globalFinalCsvArray: any[] = [];
 let globalFinalResultArray: any[] = [];
-
-// columns
-const globalColumns: { [key: string]: string } = {
-  shopname: 'shopname', // shopname
-  genre: 'genre', // genre
-  station: 'station', // station
-  budget: 'budget', // budget
-  shopphone: 'shopphone', // shopphone
-  address: 'address', // address
-  businesstime: 'businesstime', // business time
-  holiday: 'holiday', // holiday
-  seat: 'seat', // seat
-};
 
 /*
  main
@@ -59,33 +59,23 @@ const createWindow = (): void => {
   try {
     // window
     mainWindow = new BrowserWindow({
-      width: 1200, // width
-      height: 1000, // height
+      width: myWindows.WINDOW_WIDTH, // width
+      height: myWindows.WINDOW_HEIGHT, // height
       webPreferences: {
         nodeIntegration: false, // Node.js usable
         contextIsolation: true, // isolate context
-        preload: path.join(__dirname, 'preload/preload.js'), // preload
+        preload: path.join(__dirname, 'preload.js'), // preload
       },
     });
 
     // hide menu bar
     mainWindow.setMenuBarVisibility(false);
     // index.html load
-    mainWindow.loadFile(path.join(__dirname, '../index.html'));
+    mainWindow.loadFile(path.join(globalRootPath, "www", "index.html"));
     // ready
     mainWindow.once('ready-to-show', () => {
       // dev mode
       // mainWindow.webContents.openDevTools();
-    });
-
-    // minimize
-    mainWindow.on('minimize', (event: any): void => {
-      // prevent double click
-      event.preventDefault();
-      // hide window
-      mainWindow.hide();
-      // return false
-      event.returnValue = false;
     });
 
     // close
@@ -124,7 +114,9 @@ app.on('ready', async () => {
   // open window
   createWindow();
   // icon
-  const icon: Electron.NativeImage = nativeImage.createFromPath(path.join(__dirname, '../assets/beer.ico'));
+  const icon: Electron.NativeImage = nativeImage.createFromPath(
+    path.join(globalRootPath, "assets", "ico.ico")
+  );
   // tray
   const mainTray: Electron.Tray = new Tray(icon);
   // context menu
@@ -178,6 +170,7 @@ app.on('window-all-closed', () => {
 ipcMain.on('page', async (_, arg) => {
   try {
     logger.info('ipc: page mode');
+    console.log(arg);
     // transfer url
     let url: string;
 
@@ -198,19 +191,19 @@ ipcMain.on('page', async (_, arg) => {
       // top page
       case 'top_page':
         // set url
-        url = '../index.html';
+        url = 'index.html';
         break;
 
       // URL page
       case 'url_page':
         // set url
-        url = '../url.html';
+        url = 'url.html';
         break;
 
       // shop page
       case 'shop_page':
         // set url
-        url = '../shop.html';
+        url = 'shop.html';
         break;
 
       default:
@@ -218,7 +211,7 @@ ipcMain.on('page', async (_, arg) => {
         url = '';
     }
     // transfer
-    await mainWindow.loadFile(path.join(__dirname, url));
+    await mainWindow.loadFile(path.join(globalRootPath, 'www', url));
 
   } catch (e: unknown) {
     // error
@@ -229,151 +222,15 @@ ipcMain.on('page', async (_, arg) => {
   }
 });
 
-// scrape
-ipcMain.on('scrape', async (_: any, arg: any) => {
-  try {
-    logger.info('ipc: scrape mode');
-    // counter
-    let counter: number = 0;
-
-    // initialize CSV array
-    globalFinalResultArray = [];
-
-    /// selector
-    // ShopName
-    const targetShopName: string = '#gc > div.shop_header > div.sic > div.shop_info_block > div.sit > a > h2';
-    // ShopGenre
-    const targetShopGenre: string = '#gc > div.shop_header > div.sic > div.shop_info_block > div.sit > a > p';
-    // CloseStation
-    const targetShopCloseStation: string = '#gc > div.shop_header > div.sic > div.shop_info_block > div.shop_info_access_budget > p.shop_nearest_station > span';
-    // ShopBudget
-    const targetShopBudget: string = '#gc > div.shop_header > div.sic > div.shop_info_block > div.shop_info_access_budget > p.shop_budget > span';
-    // PhoneNumber
-    const targetPhoneNumber: string = '#gc > div.shop_container > div.shop_container__main > div.shop_data > div.shop_info > table > tbody > tr:nth-child(1) > td > div.pc_item_block > span';
-    // ShopAddress
-    const targetShopAddress: string = '#gc > div.shop_container > div.shop_container__main > div.shop_data > div.shop_info > table > tbody > tr:nth-child(2) > td > div.pc_item_block > div > p.link_address > a';
-    // BusinessTime
-    const targetShopBusinessTime: string = '#gc > div.shop_container > div.shop_container__main > div.shop_data > div.shop_info > table > tbody > tr:nth-child(4) > td';
-    // ShopHoliday
-    const targetShopHoliday: string = '#gc > div.shop_container > div.shop_container__main > div.shop_data > div.shop_info > table > tbody > tr:nth-child(5) > td';
-    // ShopSheet
-    const targetShopSheet: string = '#gc > div.shop_container > div.shop_container__main > div.shop_data > div.shop_info > table > tbody > tr:nth-child(7) > td';
-
-    // all selectors
-    const premolSelectors: any = {
-      shopname: targetShopName,
-      genre: targetShopGenre,
-      station: targetShopCloseStation,
-      budget: targetShopBudget,
-      shopphone: targetPhoneNumber,
-      address: targetShopAddress,
-      businesstime: targetShopBusinessTime,
-      holiday: targetShopHoliday,
-      seat: targetShopSheet,
-    };
-    // initialize puppeteer
-    await puppScraper.init();
-
-    // loop
-    for await (const url of arg) {
-      try {
-        // shop data
-        let myShopObj: any = {
-          shopname: '', // shopname
-          genre: '', // genre
-          station: '', // status
-          budget: '', // budget
-          shopphone: '', // shopphone
-          address: '', // address
-          businesstime: '', // business time
-          holiday: '', // holiday
-          seat: '', // seat
-        };
-        // goto top
-        await puppScraper.doGo(url);
-        // wait for 2 sec
-        await puppScraper.doWaitFor(2 * 1000);
-        logger.debug(`app: scraping ${url}`);
-        // scrape shopname
-        const shopnameresult: string = await doScrape(premolSelectors['shopname']);
-        // shopname
-        myShopObj['shopname'] = shopnameresult;
-        // scrape genre
-        const genreresult: string = await doScrape(premolSelectors['genre']);
-        // genre
-        myShopObj['genre'] = genreresult;
-        // scrape station
-        const stationresult: string = await doScrape(premolSelectors['station']);
-        // station
-        myShopObj['station'] = stationresult;
-        // scrape budget
-        const budgetresult: string = await doScrape(premolSelectors['budget']);
-        // budget
-        myShopObj['budget'] = budgetresult;
-        // scrape phone
-        const phoneresult: string = await doScrape(premolSelectors['shopphone']);
-        // phone
-        myShopObj['shopphone'] = phoneresult;
-        // scrape address
-        const addressresult: string = await doScrape(premolSelectors['address']);
-        // address
-        myShopObj['address'] = addressresult;
-        // scrape businesstime
-        const businessresult: string = await doScrape(premolSelectors['businesstime']);
-        // check businesstime
-        const businessTxt: string = await doCheck(businessresult);
-        myShopObj['businesstime'] = businessTxt;
-        // scrape businesstime
-        const holidayresult: string = await doScrape(premolSelectors['holiday']);
-        // holiday
-        const holidayTxt: string = await doCheck(holidayresult);
-        myShopObj['holiday'] = holidayTxt;
-        // scrape seat
-        const seatresult: string = await doScrape(premolSelectors['seat']);
-        // seat
-        const seatTxt: string = await doCheck(seatresult);
-        myShopObj['seat'] = seatTxt;
-        // increment
-        counter++;
-        // push into array
-        globalFinalResultArray.push(myShopObj);
-
-      } catch (err: unknown) {
-        // error
-        if (err instanceof Error) {
-          // error
-          logger.error(err.message);
-        }
-      }
-    }
-
-    // CSV filename
-    const nowtime: string = `${dir_desktop}\\${(new Date).toISOString().replace(/[^\d]/g, "").slice(0, 14)}.csv`;
-    // make CSV
-    await csvMaker.makeCsvData(globalFinalResultArray, globalColumns, nowtime);
-    logger.debug('CSV writing finished');
-    // close window
-    await puppScraper.doClose();
-    // show message
-    dialogMaker.showmessage('info', 'scrape finished.');
-
-  } catch (e: unknown) {
-    // error
-    if (e instanceof Error) {
-      // error
-      logger.error(e.message);
-    }
-    // close puppeteer
-    await puppScraper.doClose();
-  }
-});
 
 // CSV
 ipcMain.on('csv', async (event, _) => {
   try {
     logger.info('ipc: csv mode');
+    // csv path
+    const csvPath: any = await csvMaker.showCSVDialog(mainWindow);
     // get CSV data
-    const result: any = await csvMaker.getCsvDataDialog();
+    const result: any = await csvMaker.getCsvData(csvPath);
     // send csv list
     event.sender.send('shopinfoCsvlist', result);
 
@@ -389,7 +246,7 @@ ipcMain.on('csv', async (event, _) => {
 // scrape url
 ipcMain.on('scrapeurl', async (_: any, arg: any) => {
   try {
-    logger.info('ipc: scrape mode');
+    logger.info('ipc: scrape url mode');
     // counter
     let counter: number = 0;
     // url list
@@ -460,7 +317,7 @@ ipcMain.on('scrapeurl', async (_: any, arg: any) => {
                 const targetUrl: string = await puppScraper.getUrl();
                 // CSV
                 globalFinalCsvArray.push({
-                  'URL': targetUrl,
+                  'url': targetUrl,
                 });
                 logger.debug(targetUrl);
                 logger.debug(counter.toString());
@@ -499,7 +356,7 @@ ipcMain.on('scrapeurl', async (_: any, arg: any) => {
     // CSV file name
     const nowtime: string = `${dir_desktop}\\${(new Date).toISOString().replace(/[^\d]/g, "").slice(0, 14)}_url.csv`;
     // make CSV file
-    await csvMaker.makeCsvData(globalFinalCsvArray, globalColumns, nowtime);
+    await csvMaker.makeCsvData(globalFinalCsvArray, myArrays.columns, nowtime);
 
   } catch (err: unknown) {
     // error
@@ -513,13 +370,140 @@ ipcMain.on('scrapeurl', async (_: any, arg: any) => {
   }
 });
 
+// scrape
+ipcMain.on('scrape', async (_: any, arg: any) => {
+  try {
+    logger.info('ipc: scrape mode');
+    // counter
+    let counter: number = 0;
+
+    console.log(arg);
+
+    // initialize CSV array
+    globalFinalResultArray = [];
+
+    /// selector
+    // all selectors
+    const premolSelectors: any = {
+      shopname: mySelector.targetShopName,
+      genre: mySelector.targetShopGenre,
+      station: mySelector.targetShopCloseStation,
+      budget: mySelector.targetShopBudget,
+      shopphone: mySelector.targetPhoneNumber,
+      address: mySelector.targetShopAddress,
+      businesstime: mySelector.targetShopBusinessTime,
+      holiday: mySelector.targetShopHoliday,
+      seat: mySelector.targetShopSheet,
+    };
+    // initialize puppeteer
+    await puppScraper.init();
+
+    // loop
+    for await (const url of arg) {
+      try {
+        // shop data
+        let myShopObj: any = {
+          shopname: '', // shopname
+          genre: '', // genre
+          station: '', // status
+          budget: '', // budget
+          shopphone: '', // shopphone
+          address: '', // address
+          businesstime: '', // business time
+          holiday: '', // holiday
+          seat: '', // seat
+        };
+        // goto top
+        await puppScraper.doGo(url);
+        // wait for 2 sec
+        await puppScraper.doWaitFor(2 * 1000);
+        // chack age
+        await doAgeChack();
+        logger.debug('age checked');
+        logger.debug(`app: scraping ${url}`);
+        // scrape shopname
+        const shopnameresult: string = await doScrape(premolSelectors['shopname']);
+        // shopname
+        myShopObj['shopname'] = shopnameresult;
+        // scrape genre
+        const genreresult: string = await doScrape(premolSelectors['genre']);
+        // genre
+        myShopObj['genre'] = genreresult;
+        // scrape station
+        const stationresult: string = await doScrape(premolSelectors['station']);
+        // station
+        myShopObj['station'] = stationresult;
+        // scrape budget
+        const budgetresult: string = await doScrape(premolSelectors['budget']);
+        // budget
+        myShopObj['budget'] = budgetresult;
+        // scrape phone
+        const phoneresult: string = await doScrape(premolSelectors['shopphone']);
+        // phone
+        myShopObj['shopphone'] = phoneresult;
+        // scrape address
+        const addressresult: string = await doScrape(premolSelectors['address']);
+        // address
+        myShopObj['address'] = addressresult;
+        // scrape businesstime
+        const businessresult: string = await doScrape(premolSelectors['businesstime']);
+        // check businesstime
+        const businessTxt: string = await doCheck(businessresult);
+        myShopObj['businesstime'] = businessTxt;
+        // scrape businesstime
+        const holidayresult: string = await doScrape(premolSelectors['holiday']);
+        // holiday
+        const holidayTxt: string = await doCheck(holidayresult);
+        myShopObj['holiday'] = holidayTxt;
+        // scrape seat
+        const seatresult: string = await doScrape(premolSelectors['seat']);
+        // seat
+        const seatTxt: string = await doCheck(seatresult);
+        myShopObj['seat'] = seatTxt;
+        // increment
+        counter++;
+        // push into array
+        globalFinalResultArray.push(myShopObj);
+
+      } catch (err: unknown) {
+        // error
+        if (err instanceof Error) {
+          // error
+          logger.error(err.message);
+        }
+      }
+    }
+
+    // CSV filename
+    const nowtime: string = `${dir_desktop}\\${(new Date).toISOString().replace(/[^\d]/g, "").slice(0, 14)}.csv`;
+    // make CSV
+    await csvMaker.makeCsvData(globalFinalResultArray, myArrays.columns, nowtime);
+    logger.debug('CSV writing finished');
+    // close window
+    await puppScraper.doClose();
+    // show message
+    dialogMaker.showmessage('info', 'scrape finished.');
+
+  } catch (e: unknown) {
+    // error
+    if (e instanceof Error) {
+      // error
+      logger.error(e.message);
+    }
+    // close puppeteer
+    await puppScraper.doClose();
+  }
+});
+
 // pause scraper
 ipcMain.on('pause', async (_: any, arg: any) => {
   try {
     logger.info('ipc: pause mode');
-    // CSV path
+    // csv path
     let targetpath: string = '';
-    // CSV data array
+    // csv columns
+    let targetColumns: string[] = [];
+    // csv data array
     let targetCsvArray: any[] = [];
     // show question dialog
     const selected: number = dialogMaker.showQuetion('Q', 'stop', 'app will stop ok？scraped data is written to csv file.');
@@ -533,19 +517,24 @@ ipcMain.on('pause', async (_: any, arg: any) => {
       const nowtime: string = `${dir_desktop}\\${(new Date).toISOString().replace(/[^\d]/g, '').slice(0, 14)}`;
 
       if (arg == 'url') {
-        // target CSV data
+        // target csv data
         targetCsvArray = globalFinalCsvArray;
+        // csv columns
+        targetColumns = myArrays.urlcolumns;
         // csv file name
         targetpath = `${nowtime}_url.csv`;
 
       } else if (arg == 'shop') {
         // target CSV
         targetCsvArray = globalFinalResultArray;
+        // csv columns
+        targetColumns = myArrays.columns;
         // csv file name
         targetpath = `${nowtime}.csv`;
       }
+
       // make CSV
-      await csvMaker.makeCsvData(targetCsvArray, globalColumns, targetpath);
+      await csvMaker.makeCsvData(targetCsvArray, targetColumns, targetpath);
 
     } else {
       return false;
@@ -658,52 +647,21 @@ const doAgeChack = async (): Promise<void> => {
       const initCheckDateSelector: string = '#age_check_day';
       const initCheckConfirmSelector: string = '#ac_modal_btn > span.jp_txt';
 
-      // selector exists
-      if (await puppScraper.doCheckSelector(initCheckYearSelector)) {
-        // birthday
-        await puppScraper.doType(initCheckYearSelector, '1980');
-
-      } else {
-        throw new Error('no element error');
-      }
-
+      // birthday
+      await puppScraper.doType(initCheckYearSelector, '1980');
       // wait for selector
-      await puppScraper.doWaitSelector(initCheckMonthSelector, 3000);
-
-      // element exists
-      if (await puppScraper.doCheckSelector(initCheckMonthSelector)) {
-        // birth month
-        await puppScraper.doSelect(initCheckMonthSelector);
-
-      } else {
-        // error
-        throw new Error('no element error');
-      }
+      await puppScraper.doWaitSelector(initCheckMonthSelector, 1000);
+      // birth month
+      await puppScraper.doSelect(initCheckMonthSelector, '1');
       // wait for selector
-      await puppScraper.doWaitSelector(initCheckDateSelector, 3000);
-
-      // element exists
-      if (await puppScraper.doCheckSelector(initCheckDateSelector)) {
-        // birth date
-        await puppScraper.doType(initCheckDateSelector, '1');
-
-      } else {
-        // error
-        throw new Error('no element error');
-      }
-
+      await puppScraper.doWaitSelector(initCheckDateSelector, 1000);
+      // birth date
+      await puppScraper.doType(initCheckDateSelector, '1');
       // wait for selector
-      await puppScraper.doWaitSelector(initCheckConfirmSelector, 3000);
+      await puppScraper.doWaitSelector(initCheckConfirmSelector, 1000);
+      // click confim button
+      await puppScraper.doClick(initCheckConfirmSelector);
 
-      // element exists
-      if (await puppScraper.doCheckSelector(initCheckConfirmSelector)) {
-        // click confim button
-        await puppScraper.doClick(initCheckConfirmSelector);
-
-      } else {
-        // error
-        throw new Error('no element error');
-      }
       // finish
       resolve();
 

@@ -3,7 +3,7 @@
  *
  * name：ElLogger
  * function：Logging operation for electron
- * updated: 2026/01/03
+ * updated: 2025/07/21
  **/
 
 'use strict';
@@ -65,7 +65,7 @@ class ELLogger {
   error = (e: unknown) => {
     if (e instanceof Error) {
       // error
-      logger.error(process.pid, e.stack);
+      logger.error(e.stack);
     }
   };
 
