@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+    <meta charset="utf-8">
+    <title>食べログスクレイピングツール(通常版)</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/button.css">
+  </head>
+
+  <body>
+    <h1>食べログURL取得(大都市版)</h1>
+    <div class="wrapper">
+      <div class="operation_area">
+        <h4>対象エリア</h4>
+        <div class="cp_ipselect02">
+          <select id="prefecture" name="prefecture">
+            <option value="01">銀座</option>
+            <option value="02">日本橋</option>
+            <option value="03">渋谷</option>
+            <option value="04">新宿</option>
+            <option value="05">池袋</option>
+            <option value="06">原宿</option>
+            <option value="07">六本木</option>
+            <option value="08">赤坂</option>
+            <option value="09">飯田橋</option>
+            <option value="10">秋葉原</option>
+            <option value="11">上野</option>
+            <option value="12">両国</option>
+            <option value="13">築地</option>
+            <option value="14">浜松町</option>
+            <option value="15">大井</option>
+            <option value="16">目黒</option>
+            <option value="17">東急沿線</option>
+            <option value="18">京王・小田急沿線</option>
+            <option value="19">中野～西荻窪</option>
+            <option value="20">吉祥寺</option>
+            <option value="21">西武沿線</option>
+            <option value="22">板橋</option>
+            <option value="23">巣鴨</option>
+            <option value="24">千住</option>
+            <option value="25">小金井</option>
+            <option value="26">調布</option>
+            <option value="27">町田</option>
+            <option value="28">西東京市</option>
+            <option value="29">立川市</option>
+            <option value="30">福生</option>
+            <option value="31">伊豆諸島</option>
+            <option value="o01">大阪市</option>
+            <option value="o05">堺</option>
+            <option value="o06">豊中</option>
+            <option value="o07">北河内</option>
+            <option value="o08">南河内</option>
+          </select>
+        </div>
+        <div class="input_area">
+          終了エリア番号:
+          <input type="number" id="endarea" name="endarea" min="1" max="999" />
+        </div>
+        <div class="button_area">
+          <div><button class="button-g button-4 button-wide" onclick="gotoScrape();">開始</button></div>
+          <div><button class="button-g button-wide" onclick="pauseScrape();">中断</button></div>
+        </div>
+      </div>
+      <div class="progress_area">
+        <div>成功数:<span id="success"></span></div>
+      </div>
+      <div class="operation_area">
+        <h3>ステータス</h3>
+        <div id="scrapingstatus"></div>
+      </div>
+      <div class="operation_area">
+        <button type="button" id="topbutton" class="button-g button-6 button-wide" role="button"
+          onclick="transfer('top_page');">トップへ戻る</button>
+      </div>
+      <button class="button-g button-1 button-wide" value="exit" onclick="exitApp();">終了
+    </div>
+    <footer>
+      <p>
+        <small>&copy; 2024 Satsuma Ebisudo All Rights Reserved.</small>
+      </p>
+    </footer>
+
+    <script>
+      /// dom
+      // status
+      const scrapingstatusDom = document.getElementById('scrapingstatus');
+      // successtotal
+      const successtotalDom = document.getElementById('successtotal');
+      // success
+      const successDom = document.getElementById('success');
+      // startarea
+      const endreaDom = document.getElementById('endarea');
+
+      // pref total
+      window.api.on('console', arg => {
+        // pref total dom
+        console.log(arg);
+      });
+      // success
+      window.api.on('urlsuccess', arg => {
+        console.log('success: ' + arg);
+        // area success dom
+        successDom.innerHTML = arg;
+      });
+      // status Update
+      window.api.on('statusUpdate', arg => {
+        try {
+          // status Update
+          scrapingstatusDom.innerHTML = `
+          scraping url: ${arg}`;
+
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      });
+      // page transfer
+      const transfer = channel => {
+        try {
+          // page transfer
+          window.api.send('page', channel);
+
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      }
+      // start scraping
+      const gotoScrape = () => {
+        try {
+          // initialize form
+          scrapingstatusDom.innerHTML = '';
+          // select dom
+          const select = document.getElementById('prefecture');
+          // startarea no
+          const endareaNo = endreaDom.value;
+          // send obj
+          const obj = {
+            no: select.value,
+            end: endareaNo,
+          }
+          // start scraping
+          window.api.send('scrapebigurl', obj);
+
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      }
+      // pause Scraping
+      const pauseScrape = () => {
+        try {
+          // pause Scraping
+          window.api.send("pause");
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      }
+      // exit App
+      const exitApp = () => {
+        try {
+          // exit App
+          window.api.send('exit');
+
+        } catch (e) {
+          // error
+          console.log(e);
+        }
+      }
+    </script>
+  </body>
+
+</html>

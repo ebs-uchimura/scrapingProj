@@ -111,7 +111,7 @@ app.on('ready', async () => {
   // create window
   createWindow();  // icon
   const icon: Electron.NativeImage = nativeImage.createFromPath(
-    path.join(globalRootPath, 'assets', 'gourmet.png')
+    path.join(globalRootPath, 'assets', 'omochitabelog.ico')
   );
   // tray
   const mainTray: Electron.Tray = new Tray(icon);
@@ -194,17 +194,18 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
     let shopSuccessCounter: number = 0;
     // shop fail counter
     let shopFailCounter: number = 0;
-    console.log(arg);
     // url array
-    const urlArray: any[] = arg.record.flat();
-    // url length
-    const urlLength: number = urlArray.length;
+    const urlArray: any[] = arg.urls.record.flat();
+    // start point
+    const tmpPosition: any = arg.pos ?? 0;
+    // total counter
+    let urlLength: number = urlArray.length;
     // init array
     finalResultArray = [];
     // initialize scraper
     await puppScraper.init(false);
     // update total
-    event.sender.send('shoptotal', urlLength);
+    event.sender.send('shoptotal', urlLength - tmpPosition);
     // partnumber
     const totalNumber: number[] = makeNumberRange(0, urlLength);
 
@@ -339,7 +340,6 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
         myShopObj['official2'] = checkedOfficialAccount2;
         // shop counter
         shopSuccessCounter++;
-        console.log(myShopObj);
         // push into array
         finalResultArray.push(myShopObj);
         // update target url
@@ -383,6 +383,38 @@ ipcMain.on('scrape', async (event: any, arg: any) => {
     await puppScraper.doClose();
   }
 });
+
+// pause
+ipcMain.on("pause", async (_: any, __: any) => {
+  return new Promise(async (resolve, _) => {
+    try {
+      logger.info("ipc: pause mode");
+      // CSV file name
+      const nowtime: string = `${dir_desktop}\\${myConst.APP_NAME}_${new Date().toISOString().replace(/[^\d]/g, "").slice(0, 14)}.csv`;
+      // make csv
+      await csvMaker.makeCsvData(finalResultArray, myArrays.columns, nowtime);
+      logger.debug("CSV writing finished");
+      // show finished message
+      dialogMaker.showmessage("info", "scraping stopped");
+      // quit app
+      app.quit();
+
+    } catch (e: unknown) {
+      // error
+      logger.error(e);
+      // error
+      if (e instanceof Error) {
+        // show error
+        dialogMaker.showmessage("error", `${e.message}`);
+      }
+      return false;
+    } finally {
+      // goto top
+      await puppScraper.doClose();
+    }
+  });
+});
+
 
 // exit
 ipcMain.on('exit', async () => {

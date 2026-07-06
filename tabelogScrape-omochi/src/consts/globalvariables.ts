@@ -34,7 +34,6 @@ export namespace mySelector {
   // Tabelog mainshopname selector
   export const tabeLogMainShopnameSelector: string =
     "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(1) > td";
-
   // Tabelog detail selector1
   export const tabelLogDetailSelector1: string =
     "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(2) > td";
@@ -68,11 +67,9 @@ export namespace mySelector {
   // Tabelog detail selector11
   export const tabelLogDetailSelector11: string =
     "#rst-data-head > table:nth-child(2) > tbody > tr:nth-child(12) > td";
-
   // Tabelog seat selector
   export const tabeLogSeatSelector: string =
     "#rst-data-head > table:nth-child(4) > tbody > tr:nth-child(1) > td > p:nth-child(1)";
-
   // Tabelog menu selector1
   export const tabeLogMenu1Selector: string =
     "#rst-data-head > table:nth-child(6) > tbody > tr:nth-child(1) > td";
@@ -82,7 +79,6 @@ export namespace mySelector {
   // Tabelog menu selector3
   export const tabeLogMenu3Selector: string =
     "#rst-data-head > table:nth-child(6) > tbody > tr:nth-child(3) > td";
-
   // Tabelog official account selector1
   export const tabeLogOfficialAccount1Selector: string =
     "#rst-data-head > table:nth-child(9) > tbody > tr:nth-child(4) > td";

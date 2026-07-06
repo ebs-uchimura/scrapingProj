@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    /* Modules */
+    "module": "commonjs",
+    "outDir": "./build",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    /* Type Checking */
+    "strict": true,
+    /* Completeness */
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "paths": {
+      "*": [
+        "./@types/*"
+      ]
+    },
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    ".gitignore",
+    ".git"
+  ],
+}

@@ -10,7 +10,6 @@
 import { myConst } from './consts/globalvariables';
 
 // import modules
-import { config as dotenv } from "dotenv"; // dotenv
 import {
   BrowserWindow,
   app,
@@ -36,17 +35,14 @@ if (!myConst.DEV_FLG) {
 }
 // const
 const DEF_GOOGLE_URL: string = "https://www.google.com/"; // scraping site
-const CSV_ENCODING: string = "utf-8"; // csv char code
 // logger
 const logger: Logger = new Logger(myConst.COMPANY_NAME, myConst.APP_NAME, 'info');
 // csv
-const csvMaker: CSV = new CSV(CSV_ENCODING, logger);
+const csvMaker: CSV = new CSV(myConst.CSV_ENCODING, logger);
 // dialog
 const dialogMaker: Dialog = new Dialog(logger);
 // scraper
 const puppScraper: Scrape = new Scrape(logger);
-// env
-dotenv({ path: path.join(__dirname, "../.env") });
 
 // shopinfo selector
 interface shopinfoselector {
@@ -56,6 +52,7 @@ interface shopinfoselector {
   businesstime?: string;
   telephone: string;
   genre?: string;
+  status?: string;
   review?: string;
 }
 // shopinfo
@@ -66,6 +63,7 @@ interface shopinfoobj {
   address: string;
   telephone: string;
   genre: string;
+  status: string;
   review: string;
 }
 
@@ -83,6 +81,7 @@ const shatusBase: string = "div.nwVKo > div.loJjTe > div";
 const shopnameSelector: string = `div.QpPSMb > div > div`;
 const shopreviewSelector: string = `${shatusBase} > span.Aq14fc`;
 const shopgenreSelector: string = 'span.E5BaQ';
+const shopstatusSelector: string = 'div.pdPVde > div > div > div:nth-child(1) > div > div > div:nth-child(1) > div > div.JlqpRe > span > div > span > span';
 // desktop path
 const dir_home =
   process.env[process.platform == "win32" ? "USERPROFILE" : "HOME"] ?? "";
@@ -93,6 +92,7 @@ const googleSelectors: shopinfoselector = {
   shopname: shopnameSelector,
   review: shopreviewSelector,
   genre: shopgenreSelector,
+  status: shopstatusSelector,
   address: shopaddressSelector,
   businesstime: shopbusinessSelector,
   telephone: shoptelephoneSelector,
@@ -106,6 +106,7 @@ const globalColumns: string[] = [
   'businesstime', // businesstime
   'telephone', // telephone
   'genre', // genre
+  'status', // status
   'review', // review
 ];
 
@@ -178,7 +179,7 @@ app.on("ready", async () => {
   createWindow();
   // icon
   const icon: Electron.NativeImage = nativeImage.createFromPath(
-    path.join(globalRootPath, 'assets', 'gourmet.png')
+    path.join(globalRootPath, 'assets', 'google.ico')
   );
   // tray
   const mainTray: Electron.Tray = new Tray(icon);
@@ -271,6 +272,7 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
             address: "",
             telephone: "",
             businesstime: "",
+            status: "",
             genre: "",
             review: "",
           };
@@ -332,7 +334,7 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
 });
 
 // CSV
-ipcMain.on("csv", async (event, _) => {
+ipcMain.on("csv", async (event: any, _: any) => {
   try {
     logger.info("ipc: csv mode");
     // get CSV file name
@@ -525,6 +527,18 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
           existFlg = true;
         }
 
+        // shopstatus
+        const shopstatus: string = await goScrape(googleSelectors.status!);
+        // no shopname
+        if (shopstatus == "") {
+          logger.info("no shopstatus found");
+        } else {
+          logger.info(`shopstatus is ${shopstatus}`);
+          // wait for 0.1 sec
+          await puppScraper.doWaitFor(100);
+          existFlg = true;
+        }
+
         // site exists
         if (existFlg) {
           // shop data
@@ -535,6 +549,7 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
             businesstime: businesstime,
             telephone: telephone,
             genre: genre,
+            status: shopstatus,
             review: review,
           };
           // return shop data
@@ -555,6 +570,7 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
         businesstime: "",
         telephone: "",
         genre: "",
+        status: "",
         review: "",
       };
       // push into array

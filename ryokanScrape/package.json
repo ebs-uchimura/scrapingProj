@@ -1,0 +1,61 @@
+{
+  "name": "ryokan-scrape",
+  "productName": "ryokan-scrape",
+  "version": "1.0.0",
+  "description": "Electron application for ryokan-scrape",
+  "main": "build/ryokan.js",
+  "scripts": {
+    "build": "tsc && chcp 65001",
+    "start": "npm run build && electron .",
+    "build-win": "npm run build && electron-builder --win --x64"
+  },
+  "keywords": [],
+  "author": {
+    "name": "ebs-uchimura",
+    "email": "uchimura@ebisu-do.jp"
+  },
+  "dependencies": {
+    "@ghostery/adblocker-puppeteer": "^2.13.2",
+    "cross-fetch": "^4.1.0",
+    "csv": "^6.4.1",
+    "electron-log": "^5.1.0",
+    "iconv-lite": "^0.6.3",
+    "puppeteer": "^24.35.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.0",
+    "electron": "^36.8.0",
+    "electron-builder": "^26.6.0",
+    "typescript": "^5.9.3"
+  },
+  "build": {
+    "appId": "com.ebisudo.ryokan",
+    "productName": "ryokan-scrape",
+    "files": [
+      "build/**/*",
+      "package.json",
+      "!dist/**/*",
+      "!src/**/*",
+      "!.gitignore",
+      "!.vscode"
+    ],
+    "extraResources": [
+      "assets",
+      "www/**/*"
+    ],
+    "squirrelWindows": {},
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/ryokan.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "license": "GPL-3.0"
+}

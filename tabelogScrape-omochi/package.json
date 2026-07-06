@@ -1,7 +1,7 @@
 {
   "name": "omochi-tabelog-scrape",
   "productName": "omochitabelogscrape",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Electron application for scraping",
   "main": "build/omochitabelog.js",
   "scripts": {
@@ -27,7 +27,7 @@
     "@types/node": "^24.0.13",
     "electron": "^36.8.0",
     "electron-builder": "^26.0.12",
-    "typescript": "^5.2.2"
+    "typescript": "^5.9.3"
   },
   "build": {
     "appId": "com.ebisudo.omochitabelog",
@@ -51,7 +51,7 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "assets/gourmet.png"
+      "icon": "assets/omochitabelog.png"
     },
     "nsis": {
       "oneClick": false,
