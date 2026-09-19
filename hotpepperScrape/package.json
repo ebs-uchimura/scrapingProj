@@ -1,0 +1,29 @@
+{
+  "name": "hotpepper-scrape",
+  "productName": "hotpepper-scrape",
+  "version": "1.0.3",
+  "description": "Electron application for hotpepper-scrape",
+  "main": "build/hotpepper.js",
+  "scripts": {
+    "build": "tsc && chcp 65001",
+    "start": "npm run build && electron ."
+  },
+  "keywords": [],
+  "author": {
+    "name": "ebs-uchimura",
+    "email": "uchimura@ebisu-do.jp"
+  },
+  "dependencies": {
+    "csv": "^6.4.1",
+    "electron-log": "^5.1.0",
+    "iconv-lite": "^0.6.3",
+    "puppeteer-core": "^24.12.1",
+    "typescript": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.13",
+    "electron": "^36.5.0",
+    "electron-packager": "^17.1.2"
+  },
+  "license": "GPL-3.0"
+}
