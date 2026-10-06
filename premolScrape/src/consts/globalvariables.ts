@@ -6,7 +6,7 @@
 
 /** const */
 export namespace myConst {
-  export const DEV_FLG: boolean = false;
+  export const DEV_FLG: boolean = true;
   export const APP_NAME: string = "tabelogScraper";
   export const COMPANY_NAME: string = 'Ebisudo';
   export const CSV_ENCODING: string = "SJIS";

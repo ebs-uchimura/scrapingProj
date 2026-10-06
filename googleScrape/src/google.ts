@@ -10,7 +10,6 @@
 import { myConst } from './consts/globalvariables';
 
 // import modules
-import { config as dotenv } from "dotenv"; // dotenv
 import {
   BrowserWindow,
   app,
@@ -20,7 +19,7 @@ import {
   nativeImage,
 } from "electron"; // electron
 import * as path from "node:path"; // path
-import { Scrape } from "./class/ElScrape0804"; // scraper
+import { Scrape } from "./class/ElScrapeCore0121"; // scraper
 import Dialog from "./class/ElDialog0721"; // logger
 import Logger from "./class/ElLogger"; // logger
 import CSV from "./class/ElCsv0414"; // csv
@@ -36,17 +35,14 @@ if (!myConst.DEV_FLG) {
 }
 // const
 const DEF_GOOGLE_URL: string = "https://www.google.com/"; // scraping site
-const CSV_ENCODING: string = "utf-8"; // csv char code
 // logger
 const logger: Logger = new Logger(myConst.COMPANY_NAME, myConst.APP_NAME, 'info');
 // csv
-const csvMaker: CSV = new CSV(CSV_ENCODING, logger);
+const csvMaker: CSV = new CSV(myConst.CSV_ENCODING, logger);
 // dialog
 const dialogMaker: Dialog = new Dialog(logger);
 // scraper
 const puppScraper: Scrape = new Scrape(logger);
-// env
-dotenv({ path: path.join(__dirname, "../.env") });
 
 // shopinfo selector
 interface shopinfoselector {
@@ -56,17 +52,32 @@ interface shopinfoselector {
   businesstime?: string;
   telephone: string;
   genre?: string;
+  status?: string;
   review?: string;
+  ai?: string;
+  tag1?: string;
+  tag2?: string;
+  tag3?: string;
+  tag4?: string;
+  tag5?: string;
 }
 // shopinfo
 interface shopinfoobj {
+  no: number;
   word: string;
   shopname: string;
   businesstime: string;
   address: string;
   telephone: string;
   genre: string;
+  status: string;
   review: string;
+  ai: string;
+  tag1: string;
+  tag2: string;
+  tag3: string;
+  tag4: string;
+  tag5: string;
 }
 
 /// selector
@@ -83,6 +94,13 @@ const shatusBase: string = "div.nwVKo > div.loJjTe > div";
 const shopnameSelector: string = `div.QpPSMb > div > div`;
 const shopreviewSelector: string = `${shatusBase} > span.Aq14fc`;
 const shopgenreSelector: string = 'span.E5BaQ';
+const shopstatusSelector: string = 'div.pdPVde > div > div > div:nth-child(1) > div > div > div:nth-child(1) > div > div.JlqpRe > span > div > span > span';
+const listHeadSelector1: string = '#rso > div:nth-child(2) > div > div > div > div:nth-child(2)'
+const listHeadSelector2: string = '#rso > div:nth-child(4) > div > div > div > div:nth-child(2)'
+const listHeadSelector3: string = '#rso > div:nth-child(6) > div > div > div > div:nth-child(2)'
+const listHeadSelector4: string = '#rso > div:nth-child(8) > div > div > div > div:nth-child(2)'
+const listHeadSelector5: string = '#rso > div:nth-child(10) > div > div > div > div:nth-child(2)'
+const shopAISelector: string = '.iNqyIf';
 // desktop path
 const dir_home =
   process.env[process.platform == "win32" ? "USERPROFILE" : "HOME"] ?? "";
@@ -93,9 +111,16 @@ const googleSelectors: shopinfoselector = {
   shopname: shopnameSelector,
   review: shopreviewSelector,
   genre: shopgenreSelector,
+  status: shopstatusSelector,
   address: shopaddressSelector,
   businesstime: shopbusinessSelector,
   telephone: shoptelephoneSelector,
+  ai: shopAISelector,
+  tag1: listHeadSelector1,
+  tag2: listHeadSelector2,
+  tag3: listHeadSelector3,
+  tag4: listHeadSelector4,
+  tag5: listHeadSelector5,
 };
 
 // columns
@@ -106,7 +131,14 @@ const globalColumns: string[] = [
   'businesstime', // businesstime
   'telephone', // telephone
   'genre', // genre
+  'status', // status
   'review', // review
+  'ai', // ai
+  'tag1', // tag1
+  'tag2', // tag2
+  'tag3', // tag3
+  'tag4', // tag4
+  'tag5', // tag5
 ];
 
 /* main */
@@ -178,7 +210,7 @@ app.on("ready", async () => {
   createWindow();
   // icon
   const icon: Electron.NativeImage = nativeImage.createFromPath(
-    path.join(globalRootPath, 'assets', 'gourmet.png')
+    path.join(globalRootPath, 'assets', 'google.ico')
   );
   // tray
   const mainTray: Electron.Tray = new Tray(icon);
@@ -247,7 +279,7 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
     await puppScraper.init();
 
     // loop for arg
-    for (const info of arg) {
+    for (const [idx, info] of arg) {
       try {
         // wait for 1 sec
         await puppScraper.doWaitFor(1000);
@@ -256,7 +288,7 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
         // wait for 1 sec
         await puppScraper.doWaitFor(1000);
         // scrape
-        const result: any = await doScrape(info, firstFlg);
+        const result: any = await doScrape(idx + 1, info, firstFlg);
         firstFlg = true;
 
         // result empty
@@ -266,13 +298,21 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
             Object.keys(result).length === 0 && result.constructor === Object;
           // shop obj
           const emptyObj: shopinfoobj = {
+            no: 0,
             word: info,
             shopname: "",
             address: "",
             telephone: "",
             businesstime: "",
+            status: "",
             genre: "",
             review: "",
+            ai: "",
+            tag1: "",
+            tag2: "",
+            tag3: "",
+            tag4: "",
+            tag5: "",
           };
 
           // if empty
@@ -332,7 +372,7 @@ ipcMain.on("scrape", async (event: any, arg: any) => {
 });
 
 // CSV
-ipcMain.on("csv", async (event, _) => {
+ipcMain.on("csv", async (event: any, _: any) => {
   try {
     logger.info("ipc: csv mode");
     // get CSV file name
@@ -403,6 +443,7 @@ ipcMain.on("exit", async () => {
       // exit app
       app.quit();
     }
+
   } catch (e: unknown) {
     // error
     if (e instanceof Error) {
@@ -413,7 +454,7 @@ ipcMain.on("exit", async () => {
 });
 
 // do scraping
-const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | string> => {
+const doScrape = async (index: number, info: string, flg: boolean): Promise<shopinfoobj | string> => {
   return new Promise(async (resolve, reject) => {
     try {
       // data exists
@@ -458,6 +499,7 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
         // no shopname
         if (shopname == "") {
           logger.info("no shopname found");
+
         } else {
           logger.info(`shopname is ${shopname}`);
           // wait for 0.1 sec
@@ -470,6 +512,7 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
         // no address
         if (address == "") {
           logger.info("no address found");
+
         } else {
           logger.info(`address is ${address}`);
           // wait for 0.1 sec
@@ -482,6 +525,7 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
         // no telephone
         if (telephone == "") {
           logger.info("no telephone found");
+
         } else {
           logger.info(`telephone is ${telephone}`);
           // wait for 0.1 sec
@@ -494,6 +538,7 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
         // no review
         if (review == "") {
           logger.info("no review found");
+
         } else {
           logger.info(`review is ${review}`);
           // wait for 0.1 sec
@@ -506,6 +551,7 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
         //  no businesstime
         if (businesstime == "") {
           logger.info("no businesstime found");
+
         } else {
           logger.info(`businesstime is ${businesstime}`);
           // wait for 0.1 sec
@@ -518,8 +564,100 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
         // no genre
         if (genre == "") {
           logger.info("no genre found");
+
         } else {
           logger.info(`genre is ${genre}`);
+          // wait for 0.1 sec
+          await puppScraper.doWaitFor(100);
+          existFlg = true;
+        }
+
+        // shopstatus
+        const shopstatus: string = await goScrape(googleSelectors.status!);
+        // no shopname
+        if (shopstatus == "") {
+          logger.info("no shopstatus found");
+
+        } else {
+          logger.info(`shopstatus is ${shopstatus}`);
+          // wait for 0.1 sec
+          await puppScraper.doWaitFor(100);
+          existFlg = true;
+        }
+
+        // ai info
+        const aiInfo: string = await goScrape(googleSelectors.ai!);
+        // no shopname
+        if (aiInfo == "") {
+          logger.info("no aiInfo found");
+
+        } else {
+          logger.info(`aiInfo is ${aiInfo}`);
+          // wait for 0.1 sec
+          await puppScraper.doWaitFor(100);
+          existFlg = true;
+        }
+
+        // tag1
+        const tag1: string = await goScrape(googleSelectors.tag1!);
+        // no tag1
+        if (tag1 == "") {
+          logger.info("no tag1 found");
+
+        } else {
+          logger.info(`tag1 is ${tag1}`);
+          // wait for 0.1 sec
+          await puppScraper.doWaitFor(100);
+          existFlg = true;
+        }
+
+        // tag2
+        const tag2: string = await goScrape(googleSelectors.tag2!);
+        // no tag2
+        if (tag2 == "") {
+          logger.info("no tag2 found");
+
+        } else {
+          logger.info(`tag2 is ${tag2}`);
+          // wait for 0.1 sec
+          await puppScraper.doWaitFor(100);
+          existFlg = true;
+        }
+
+        // tag3
+        const tag3: string = await goScrape(googleSelectors.tag3!);
+        // no tag3
+        if (tag3 == "") {
+          logger.info("no tag3 found");
+
+        } else {
+          logger.info(`tag3 is ${tag3}`);
+          // wait for 0.1 sec
+          await puppScraper.doWaitFor(100);
+          existFlg = true;
+        }
+
+        // tag4
+        const tag4: string = await goScrape(googleSelectors.tag4!);
+        // no tag4
+        if (tag4 == "") {
+          logger.info("no tag4 found");
+
+        } else {
+          logger.info(`tag4 is ${tag4}`);
+          // wait for 0.1 sec
+          await puppScraper.doWaitFor(100);
+          existFlg = true;
+        }
+
+        // tag5
+        const tag5: string = await goScrape(googleSelectors.tag5!);
+        // no tag5
+        if (tag5 == "") {
+          logger.info("no tag5 found");
+
+        } else {
+          logger.info(`tag5 is ${tag5}`);
           // wait for 0.1 sec
           await puppScraper.doWaitFor(100);
           existFlg = true;
@@ -529,13 +667,21 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
         if (existFlg) {
           // shop data
           tmpShopObj = {
+            no: index,
             word: info,
             shopname: shopname,
             address: address,
             businesstime: businesstime,
             telephone: telephone,
             genre: genre,
+            status: shopstatus,
             review: review,
+            ai: aiInfo,
+            tag1: tag1,
+            tag2: tag2,
+            tag3: tag3,
+            tag4: tag4,
+            tag5: tag5,
           };
           // return shop data
           resolve(tmpShopObj);
@@ -549,13 +695,21 @@ const doScrape = async (info: string, flg: boolean): Promise<shopinfoobj | strin
     } catch (e) {
       // empty shop data
       const emptyErrObj: shopinfoobj = {
+        no: 0,
         word: info,
         shopname: "",
         address: "",
         businesstime: "",
         telephone: "",
         genre: "",
+        status: "",
         review: "",
+        ai: "",
+        tag1: "",
+        tag2: "",
+        tag3: "",
+        tag4: "",
+        tag5: "",
       };
       // push into array
       finalShopResultArray.push(emptyErrObj);

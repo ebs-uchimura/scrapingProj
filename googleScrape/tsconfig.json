@@ -3,7 +3,6 @@
     "target": "es2016",
     /* Modules */
     "module": "commonjs",
-    "baseUrl": ".",
     "outDir": "./build",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -13,7 +12,8 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "paths": {
-    }
+    },
+    "rootDir": "./src"
   },
   "include": [
     "./src"
